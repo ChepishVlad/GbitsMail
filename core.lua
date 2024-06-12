@@ -15,7 +15,6 @@ frame:Hide()  -- скрываем окно при создании
 
 -- Создаем многострочное текстовое поле для ввода сообщения
 local editBox = CreateFrame("EditBox", "RaidMailEditBox", frame, "InputBoxTemplate")
---local editBox = CreateFrame("EditBox", "RaidMailEditBox", frame, "MultiLineEditBox")
 editBox:SetSize(260, 300)
 editBox:SetPoint("TOP", 0, -50)
 editBox:SetMultiLine(true)
@@ -81,6 +80,32 @@ closeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -10, -10)
 closeButton:SetScript("OnClick", function()
     frame:Hide() -- Скрываем фрейм при нажатии на кнопку закрытия
 end)
+
+-- Создаем кнопку "GbitPost"
+local gbitPostButton = CreateFrame("Button", "GbitPostButton", SendMailFrame, "UIPanelButtonTemplate")
+gbitPostButton:SetText("GbitPost")
+gbitPostButton:SetSize(100, 25)
+gbitPostButton:SetPoint("TOPLEFT", SendMailFrame, "TOPRIGHT", 10, -10)
+
+-- Устанавливаем обработчик события нажатия на кнопку
+gbitPostButton:SetScript("OnClick", function()
+    frame:Show() -- Показываем наше окно для почтовой рассылки
+end)
+
+-- Обработчик события для отслеживания открытия стандартного окна отправки почты
+local function OnMailFrameOpened()
+    if SendMailFrame:IsVisible() then
+        -- Размещаем кнопку "GbitPost" в стандартном окне отправки почты
+        gbitPostButton:Show()
+    else
+        -- Если стандартное окно отправки почты скрыто, скрываем и кнопку "GbitPost"
+        gbitPostButton:Hide()
+    end
+end
+
+-- Регистрируем обработчик события для открытия стандартного окна отправки почты
+SendMailFrame:HookScript("OnShow", OnMailFrameOpened)
+SendMailFrame:HookScript("OnHide", OnMailFrameOpened)
 
 -- Функция для отправки сообщения на почту выбранным участникам рейда
 function SendMailToRaid(message, gold, raidList)
