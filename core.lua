@@ -75,6 +75,13 @@ sendButton:SetScript("OnClick", function()
     frame:Hide()  -- скрываем окно после отправки сообщения
 end)
 
+-- Создаем кнопку для закрытия фрейма
+local closeButton = CreateFrame("Button", "RaidMailCloseButton", frame, "UIPanelCloseButton")
+closeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -10, -10)
+closeButton:SetScript("OnClick", function()
+    frame:Hide() -- Скрываем фрейм при нажатии на кнопку закрытия
+end)
+
 -- Функция для отправки сообщения на почту выбранным участникам рейда
 function SendMailToRaid(message, gold, raidList)
     for _, name in ipairs(raidList) do
