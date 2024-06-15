@@ -100,10 +100,14 @@ sendButton:SetScript("OnClick", function()
     local message = "Some awesome message"
     local gold = tonumber(goldEditBox:GetText()) or 0
     local raidList = {}
-    for name in string.gmatch(raidListEditBox:GetText(), "[^\n]+") do
-        table.insert(raidList, name)
+    --for name in string.gmatch(raidListEditBox:GetText(), "[^\n]+") do
+    --    table.insert(raidList, name)
+    --end
+    --SendMailToRaid(message, gold, raidList)  -- вызываем функцию отправки сообщения с текстом, золотом и списком участников
+    names = process_string(raidListEditBox:GetText())
+    for i, word in ipairs(names) do
+        print(word)
     end
-    SendMailToRaid(message, gold, raidList)  -- вызываем функцию отправки сообщения с текстом, золотом и списком участников
     frame:Hide()  -- скрываем окно после отправки сообщения
 end)
 
@@ -152,6 +156,18 @@ end
 local function ShowRaidMailFrame()
     frame:Show()
 end
+
+-- функция преобразование строки в список имен с отбрасыванием части до символа "`"
+function process_string(input_str)
+    local words = {}
+    for word in string.gmatch(input_str, "%S+") do
+        -- Удаляем часть до символа ` включительно
+        local clean_word = string.gsub(word, ".*`", "")
+        table.insert(words, clean_word)
+    end
+    return words
+end
+
 
 -- Регистрируем команду для отображения окна интерфейса (для тестирования)
 SLASH_RAIDMAIL1 = "/raidmail"
