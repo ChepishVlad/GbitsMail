@@ -3,7 +3,7 @@ local addonName = "RaidMail"
 
 -- Создаем глобальную переменную для хранения окна интерфейса
 local frame = CreateFrame("Frame", "RaidMailFrame", UIParent)
-frame:SetSize(300, 260)
+frame:SetSize(500, 460)
 frame:SetPoint("CENTER")
 frame:SetBackdrop({
     bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",  -- задний фон
@@ -14,19 +14,24 @@ frame:SetBackdrop({
 frame:Hide()  -- скрываем окно при создании
 
 -- Создаем многострочное текстовое поле для ввода сообщения
-local editBox = CreateFrame("EditBox", "RaidMailEditBox", frame, "InputBoxTemplate")
-editBox:SetSize(260, 300)
-editBox:SetPoint("TOP", 0, -50)
-editBox:SetMultiLine(true)
-editBox:SetAutoFocus(false)
-editBox:EnableMouse(true)
-editBox:SetFontObject(ChatFontNormal)
-editBox:SetTextInsets(8, 8, 8, 8)
+--local editBox = CreateFrame("EditBox", "RaidMailEditBox", frame, "InputBoxTemplate")
+--editBox:SetSize(260, 300)
+--editBox:SetPoint("TOP", 0, -50)
+--editBox:SetMultiLine(true)
+--editBox:SetAutoFocus(false)
+--editBox:EnableMouse(true)
+--editBox:SetFontObject(ChatFontNormal)
+--editBox:SetTextInsets(8, 8, 8, 8)
+
+-- Создаем метку для поля ввода золота
+local goldLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+goldLabel:SetPoint("BOTTOMLEFT", goldEditBox, "TOPLEFT", 0, 5)
+goldLabel:SetText("Золото:")
 
 -- Создаем текстовое поле для ввода золота
 local goldEditBox = CreateFrame("EditBox", "RaidMailGoldEditBox", frame, "InputBoxTemplate")
 goldEditBox:SetSize(100, 20)
-goldEditBox:SetPoint("TOP", 0, -180)
+goldEditBox:SetPoint("TOP", 20, -180)
 goldEditBox:SetAutoFocus(false)
 goldEditBox:EnableMouse(true)
 goldEditBox:SetFontObject(ChatFontNormal)
@@ -34,10 +39,6 @@ goldEditBox:SetTextInsets(8, 8, 8, 8)
 goldEditBox:SetNumeric(true)
 goldEditBox:SetMaxLetters(6)
 
--- Создаем метку для поля ввода золота
-local goldLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-goldLabel:SetPoint("BOTTOMLEFT", goldEditBox, "TOPLEFT", 0, 5)
-goldLabel:SetText("Золото:")
 
 -- Создаем метку для списка участников рейда
 local raidListLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
@@ -47,16 +48,47 @@ raidListLabel:SetText("Список участников рейда:")
 -- Создаем многострочное текстовое поле для отображения списка участников рейда
 local raidListScrollFrame = CreateFrame("ScrollFrame", "RaidMailRaidListScrollFrame", frame, "UIPanelScrollFrameTemplate")
 raidListScrollFrame:SetPoint("TOPLEFT", raidListLabel, "BOTTOMLEFT", 0, -5)
-raidListScrollFrame:SetSize(260, 100)
+raidListScrollFrame:SetSize(440, 90) -- Изначальная высота в 4 строки
+raidListScrollFrame:SetScrollChild(raidListEditBox)
+
 local raidListEditBox = CreateFrame("EditBox", "RaidMailRaidListEditBox", raidListScrollFrame)
 raidListEditBox:SetMultiLine(true)
 raidListEditBox:SetFontObject(ChatFontNormal)
-raidListEditBox:SetWidth(260)
-raidListEditBox:SetHeight(100)
+raidListEditBox:SetWidth(440)
+raidListEditBox:SetHeight(120) -- Изначальная высота в 4 строки
 raidListEditBox:SetAutoFocus(false)
 raidListEditBox:EnableMouse(true)
 raidListEditBox:SetTextInsets(8, 8, 8, 8)
 raidListScrollFrame:SetScrollChild(raidListEditBox)
+
+--raidListEditBox:SetBackdrop({
+--    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", -- Фоновый файл
+--    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", -- Границы
+--    edgeSize = 16,
+--    insets = {left = 4, right = 4, top = 4, bottom = 4}, -- Отступы
+--})
+--raidListEditBox:SetBackdropColor(0, 0, 0, 0.5) -- Цвет фона
+-- Добавляем границы родительскому фрейму
+raidListScrollFrame:SetBackdrop({
+    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", -- Фоновый файл
+    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", -- Границы
+    edgeSize = 19,
+    insets = {left = 4, right = 4, top = 4, bottom = 4}, -- Отступы
+})
+raidListScrollFrame:SetBackdropColor(0, 0, 0, 0.5) -- Цвет фона
+
+-- Добавляем полосу прокрутки, если содержимое превышает 4 строки
+raidListEditBox:SetScript("OnTextChanged", function(self)
+    local numLines = select("#", string.split("\n", self:GetText()))
+    local lineHeight = self:GetFontObject():GetLineHeight()
+    local maxLines = math.floor(raidListScrollFrame:GetHeight() / lineHeight - 4)
+    if numLines > maxLines then
+        raidListScrollFrame.ScrollBar:Show()
+    else
+        raidListScrollFrame.ScrollBar:Hide()
+    end
+end)
+
 
 -- Создаем кнопку для отправки сообщения
 local sendButton = CreateFrame("Button", "RaidMailSendButton", frame, "UIPanelButtonTemplate")
@@ -64,7 +96,8 @@ sendButton:SetSize(80, 25)
 sendButton:SetPoint("BOTTOMLEFT", 20, 20)
 sendButton:SetText("Отправить")
 sendButton:SetScript("OnClick", function()
-    local message = editBox:GetText()
+    --local message = editBox:GetText()
+    local message = "Some awesome message"
     local gold = tonumber(goldEditBox:GetText()) or 0
     local raidList = {}
     for name in string.gmatch(raidListEditBox:GetText(), "[^\n]+") do
