@@ -1,5 +1,5 @@
 -- Создаем глобальную переменную для хранения имени аддона
-local addonName = "RaidMail"
+local addonName = "Gbits RaidMail"
 
 -- Создаем глобальную переменную для хранения окна интерфейса
 local frame = CreateFrame("Frame", "RaidMailFrame", UIParent)
@@ -13,21 +13,17 @@ frame:SetBackdrop({
 })
 frame:Hide()  -- скрываем окно при создании
 
----- Создаем текстовое поле для ввода золота
---local goldEditBox = CreateFrame("EditBox", "RaidMailGoldEditBox", frame, "InputBoxTemplate")
---goldEditBox:SetSize(100, 20)
---goldEditBox:SetPoint("TOP", 20, -180)
---goldEditBox:SetAutoFocus(false)
---goldEditBox:EnableMouse(true)
---goldEditBox:SetFontObject(ChatFontNormal)
---goldEditBox:SetTextInsets(8, 8, 8, 8)
---goldEditBox:SetNumeric(true)
---goldEditBox:SetMaxLetters(6)
+-- Добавляем заголовок для фрейма
+local frameTitle = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+frameTitle:SetPoint("TOP", 0, -10)
+frameTitle:SetText(addonName)
 
----- Создаем метку для поля ввода золота
---local goldLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
---goldLabel:SetPoint("BOTTOMLEFT", goldEditBox, "TOPLEFT", 0, 5)
---goldLabel:SetText("Золото:")
+-- Создаем текстовый элемент для отображения сообщений об ошибках
+local errorMessage = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+errorMessage:SetPoint("BOTTOMRIGHT", -20, 20)
+errorMessage:SetWidth(200)  -- Установка ширины
+errorMessage:SetTextColor(1, 0, 0)  -- Установка цвета текста в красный
+errorMessage:Hide()  -- Скрываем текстовый элемент при создании
 
 -- Создаем метку для списка участников рейда
 local raidListLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
@@ -39,7 +35,7 @@ raidListLabel:SetText("Список участников рейда:")
 local raidListLabel2 = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 raidListLabel2:SetPoint("LEFT", raidListLabel, "RIGHT", 10, 0)  -- Располагаем справа от первой метки
 raidListLabel2:SetWidth(200)  -- Установка ширины в 200 пикселей
-raidListLabel2:SetText("Вторая метка:")
+raidListLabel2:SetText("Cash:")
 
 -- Создаем первое многострочное текстовое поле для отображения списка участников рейда
 local raidListScrollFrame1 = CreateFrame("ScrollFrame", "RaidMailRaidListScrollFrame1", frame, "UIPanelScrollFrameTemplate")
@@ -113,14 +109,12 @@ raidListEditBox2:SetScript("OnTextChanged", function(self)
     end
 end)
 
-
 -- Создаем кнопку для отправки сообщения
 local sendButton = CreateFrame("Button", "RaidMailSendButton", frame, "UIPanelButtonTemplate")
 sendButton:SetSize(80, 25)
 sendButton:SetPoint("BOTTOMLEFT", 20, 20)
 sendButton:SetText("Отправить")
 sendButton:SetScript("OnClick", function()
-    --local message = editBox:GetText()
     local message = "Some awesome message"
     --local gold = tonumber(goldEditBox:GetText()) or 0
     --local raidList = {}
@@ -128,16 +122,27 @@ sendButton:SetScript("OnClick", function()
     --    table.insert(raidList, name)
     --end
     --SendMailToRaid(message, gold, raidList)  -- вызываем функцию отправки сообщения с текстом, золотом и списком участников
-    names = process_string(raidListEditBox1:GetText())
-    cash_list = cast_cash(raidListEditBox2:GetText())
-    for i, word in ipairs(names) do
-        print(word)
+    local names = process_string(raidListEditBox1:GetText())
+    local cash_list = cast_cash(raidListEditBox2:GetText())
+
+    -- Проверка длины списков
+    if #names ~= #cash_list then
+        errorMessage:SetText("Длины списков не равны")
+        errorMessage:Show()
+    else
+        errorMessage:Hide()
+        for i, word in ipairs(names) do
+            print(word)
+        end
+        for i, el in ipairs(cash_list) do
+            print(el)
+        end
     end
-    for i, el in ipairs(cash_list) do
-        print(el)
-    end
-    frame:Hide()  -- скрываем окно после отправки сообщения
+
+    --frame:Hide()  -- скрываем окно после отправки сообщения
 end)
+
+
 
 -- Создаем кнопку для закрытия фрейма
 local closeButton = CreateFrame("Button", "RaidMailCloseButton", frame, "UIPanelCloseButton")
@@ -151,6 +156,8 @@ local gbitPostButton = CreateFrame("Button", "GbitPostButton", SendMailFrame, "U
 gbitPostButton:SetText("GbitPost")
 gbitPostButton:SetSize(100, 25)
 gbitPostButton:SetPoint("TOPLEFT", SendMailFrame, "TOPRIGHT", 10, -10)
+
+
 
 -- Устанавливаем обработчик события нажатия на кнопку
 gbitPostButton:SetScript("OnClick", function()
@@ -208,9 +215,6 @@ function cast_cash(inputString)
                 value = value .. el
             end
         end
-
-        --print(line)
-        --local num = tonumber(line:gsub(" ", ""))
         if value then
             table.insert(intList, value)
         end
