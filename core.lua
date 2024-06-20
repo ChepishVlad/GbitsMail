@@ -1,136 +1,142 @@
--- Создаем глобальную переменную для хранения имени аддона
-local addonName = "Gbits RaidMail"
+local addonName, addonTable = ...
 
--- Создаем глобальную переменную для хранения окна интерфейса
-local frame = CreateFrame("Frame", "RaidMailFrame", UIParent)
-frame:SetSize(500, 460)
-frame:SetPoint("CENTER")
-frame:SetBackdrop({
-    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",  -- задний фон
-    edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",    -- граница
-    edgeSize = 16,
-    insets = {left = 4, right = 4, top = 4, bottom = 4},         -- отступы
-})
-frame:Hide()  -- скрываем окно при создании
+local RaidMail = LibStub("AceAddon-3.0"):NewAddon("RaidMail", "AceConsole-3.0", "AceEvent-3.0")
+local AceGUI = LibStub("AceGUI-3.0")
 
--- Добавляем заголовок для фрейма
-local frameTitle = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-frameTitle:SetPoint("TOP", 0, -10)
-frameTitle:SetText(addonName)
+-- Функция инициализации аддона
+function RaidMail:OnInitialize()
+    self:CreateMainFrame()
+    self:RegisterChatCommand("raidmail", "ShowFrame")
+end
 
--- Создаем текстовый элемент для отображения сообщений об ошибках
-local errorMessage = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-errorMessage:SetPoint("BOTTOMRIGHT", -20, 20)
-errorMessage:SetWidth(200)  -- Установка ширины
-errorMessage:SetTextColor(1, 0, 0)  -- Установка цвета текста в красный
-errorMessage:Hide()  -- Скрываем текстовый элемент при создании
+-- Создаем главное окно интерфейса
+function RaidMail:CreateMainFrame()
+    local frame = AceGUI:Create("Frame")
+    frame:SetTitle(addonName)
+    frame:SetStatusText("")
+    frame:SetLayout("Fill")
+    frame:SetWidth(500)
+    frame:SetHeight(550)
+    frame:Hide()  -- скрываем окно при создании
+    self.frame = frame
 
--- Создаем метку для списка участников рейда
-local raidListLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-raidListLabel:SetPoint("TOPLEFT", 20, -30)
-raidListLabel:SetWidth(200)  -- Установка ширины в 200 пикселей
-raidListLabel:SetText("Список участников рейда:")
+    -- Создаем вкладки
+    local tabGroup = AceGUI:Create("TabGroup")
+    tabGroup:SetTabs({{text="Рассылка", value="mail"}, {text="Логи рассылки", value="logs"}})
+    tabGroup:SetCallback("OnGroupSelected", function(container, event, group)
+        self:SelectGroup(container, group)
+    end)
+    tabGroup:SelectTab("mail")
+    frame:AddChild(tabGroup)
+end
 
--- Создаем вторую метку для списка участников рейда
-local raidListLabel2 = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-raidListLabel2:SetPoint("LEFT", raidListLabel, "RIGHT", 10, 0)  -- Располагаем справа от первой метки
-raidListLabel2:SetWidth(200)  -- Установка ширины в 200 пикселей
-raidListLabel2:SetText("Cash:")
-
--- Создаем первое многострочное текстовое поле для отображения списка участников рейда
-local raidListScrollFrame1 = CreateFrame("ScrollFrame", "RaidMailRaidListScrollFrame1", frame, "UIPanelScrollFrameTemplate")
-raidListScrollFrame1:SetPoint("TOPLEFT", raidListLabel, "BOTTOMLEFT", 0, -5)
-raidListScrollFrame1:SetSize(200, 360) -- Изначальная высота в 4 строки
-
-local raidListEditBox1 = CreateFrame("EditBox", "RaidMailRaidListEditBox1", raidListScrollFrame1)
-raidListEditBox1:SetMultiLine(true)
-raidListEditBox1:SetFontObject(ChatFontNormal)
-raidListEditBox1:SetWidth(200)
-raidListEditBox1:SetHeight(360) -- Изначальная высота в 4 строки
-raidListEditBox1:SetAutoFocus(false)
-raidListEditBox1:EnableMouse(true)
-raidListEditBox1:SetTextInsets(8, 8, 8, 8)
-raidListScrollFrame1:SetScrollChild(raidListEditBox1)
-
--- Добавляем границы родительскому фрейму для первого текстового поля
-raidListScrollFrame1:SetBackdrop({
-    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", -- Фоновый файл
-    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", -- Границы
-    edgeSize = 19,
-    insets = {left = 4, right = 4, top = 4, bottom = 4}, -- Отступы
-})
-raidListScrollFrame1:SetBackdropColor(0, 0, 0, 0.5) -- Цвет фона
-
--- Добавляем полосу прокрутки для первого текстового поля, если содержимое превышает 4 строки
-raidListEditBox1:SetScript("OnTextChanged", function(self)
-    local numLines = select("#", string.split("\n", self:GetText()))
-    local lineHeight = self:GetFontObject():GetLineHeight()
-    local maxLines = math.floor(raidListScrollFrame1:GetHeight() / lineHeight - 4)
-    if numLines > maxLines then
-        raidListScrollFrame1.ScrollBar:Show()
-    else
-        raidListScrollFrame1.ScrollBar:Hide()
+-- Функция для отображения контента в зависимости от выбранной вкладки
+function RaidMail:SelectGroup(container, group)
+    container:ReleaseChildren()
+    if group == "mail" then
+        self:CreateMailTab(container)
+    elseif group == "logs" then
+        self:CreateLogsTab(container)
     end
-end)
+end
 
--- Создаем второе многострочное текстовое поле для отображения второго списка участников рейда
-local raidListScrollFrame2 = CreateFrame("ScrollFrame", "RaidMailRaidListScrollFrame2", frame, "UIPanelScrollFrameTemplate")
-raidListScrollFrame2:SetPoint("LEFT", raidListScrollFrame1, "RIGHT", 20, 0)
-raidListScrollFrame2:SetSize(200, 360) -- Изначальная высота в 4 строки
+-- Создаем содержимое вкладки "Рассылка"
+function RaidMail:CreateMailTab(container)
+    local inlineGroup = AceGUI:Create("InlineGroup")
+    inlineGroup:SetLayout("Flow")
+    inlineGroup:SetFullWidth(true)
+    container:AddChild(inlineGroup)
 
-local raidListEditBox2 = CreateFrame("EditBox", "RaidMailRaidListEditBox2", raidListScrollFrame2)
-raidListEditBox2:SetMultiLine(true)
-raidListEditBox2:SetFontObject(ChatFontNormal)
-raidListEditBox2:SetWidth(200)
-raidListEditBox2:SetHeight(360) -- Изначальная высота в 4 строки
-raidListEditBox2:SetAutoFocus(false)
-raidListEditBox2:EnableMouse(true)
-raidListEditBox2:SetTextInsets(8, 8, 8, 8)
-raidListScrollFrame2:SetScrollChild(raidListEditBox2)
+    local labelGroup = AceGUI:Create("SimpleGroup")
+    labelGroup:SetLayout("Flow")
+    labelGroup:SetWidth(420) -- Установка ширины группы для размещения двух меток рядом
+    inlineGroup:AddChild(labelGroup)
 
--- Добавляем границы родительскому фрейму для второго текстового поля
-raidListScrollFrame2:SetBackdrop({
-    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", -- Фоновый файл
-    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", -- Границы
-    edgeSize = 19,
-    insets = {left = 4, right = 4, top = 4, bottom = 4}, -- Отступы
-})
-raidListScrollFrame2:SetBackdropColor(0, 0, 0, 0.5) -- Цвет фона
+    -- Создаем метку для списка участников рейда
+    local raidListLabel = AceGUI:Create("Label")
+    raidListLabel:SetText("Список участников рейда:")
+    raidListLabel:SetWidth(200)  -- Установка ширины в 200 пикселей
+    labelGroup:AddChild(raidListLabel)
 
--- Добавляем полосу прокрутки для второго текстового поля, если содержимое превышает 4 строки
-raidListEditBox2:SetScript("OnTextChanged", function(self)
-    local numLines = select("#", string.split("\n", self:GetText()))
-    local lineHeight = self:GetFontObject():GetLineHeight()
-    local maxLines = math.floor(raidListScrollFrame2:GetHeight() / lineHeight - 4)
-    if numLines > maxLines then
-        raidListScrollFrame2.ScrollBar:Show()
-    else
-        raidListScrollFrame2.ScrollBar:Hide()
-    end
-end)
+    -- Создаем метку для Cash
+    local raidListLabel2 = AceGUI:Create("Label")
+    raidListLabel2:SetText("Cash:")
+    raidListLabel2:SetWidth(200)  -- Установка ширины в 200 пикселей
+    labelGroup:AddChild(raidListLabel2)
 
--- Создаем кнопку для отправки сообщения
-local sendButton = CreateFrame("Button", "RaidMailSendButton", frame, "UIPanelButtonTemplate")
-sendButton:SetSize(80, 25)
-sendButton:SetPoint("BOTTOMLEFT", 20, 20)
-sendButton:SetText("Отправить")
-sendButton:SetScript("OnClick", function()
-    local message = "Some awesome message"
-    --local gold = tonumber(goldEditBox:GetText()) or 0
-    --local raidList = {}
-    --for name in string.gmatch(raidListEditBox:GetText(), "[^\n]+") do
-    --    table.insert(raidList, name)
-    --end
-    --SendMailToRaid(message, gold, raidList)  -- вызываем функцию отправки сообщения с текстом, золотом и списком участников
-    local names = process_string(raidListEditBox1:GetText())
-    local cash_list = cast_cash(raidListEditBox2:GetText())
+    local editBoxGroup = AceGUI:Create("SimpleGroup")
+    editBoxGroup:SetLayout("Flow")
+    editBoxGroup:SetWidth(420) -- Установка ширины группы для размещения двух полей рядом
+    inlineGroup:AddChild(editBoxGroup)
 
-    -- Проверка длины списков
+    -- Создаем первое многострочное текстовое поле для списка участников рейда
+    local raidListEditBox1 = AceGUI:Create("MultiLineEditBox")
+    raidListEditBox1:SetLabel("")
+    raidListEditBox1:SetWidth(200)
+    raidListEditBox1:SetNumLines(20)
+    editBoxGroup:AddChild(raidListEditBox1)
+    self.raidListEditBox1 = raidListEditBox1
+
+    -- Скрываем кнопку "Принять" у первого поля
+    raidListEditBox1.button:Hide()
+
+    -- Создаем второе многострочное текстовое поле для Cash
+    local raidListEditBox2 = AceGUI:Create("MultiLineEditBox")
+    raidListEditBox2:SetLabel("")
+    raidListEditBox2:SetWidth(200)
+    raidListEditBox2:SetNumLines(20)
+    editBoxGroup:AddChild(raidListEditBox2)
+    self.raidListEditBox2 = raidListEditBox2
+
+    -- Скрываем кнопку "Принять" у первого поля
+    raidListEditBox2.button:Hide()
+
+    -- Создаем кнопку для отправки сообщения
+    local sendButton = AceGUI:Create("Button")
+    sendButton:SetText("Отправить")
+    sendButton:SetWidth(200)
+    sendButton:SetCallback("OnClick", function()
+        self:SendMail()
+    end)
+    inlineGroup:AddChild(sendButton)
+
+    -- Создаем текстовый элемент для отображения сообщений об ошибках
+    local errorMessage = AceGUI:Create("Label")
+    errorMessage:SetText("")
+    errorMessage:SetWidth(200)
+    errorMessage:SetColor(1, 0, 0)  -- Установка цвета текста в красный
+    inlineGroup:AddChild(errorMessage)
+    self.errorMessage = errorMessage
+end
+
+-- Создаем содержимое вкладки "Логи рассылки"
+function RaidMail:CreateLogsTab(container)
+    -- Пока пусто
+    local logsLabel = AceGUI:Create("Label")
+    logsLabel:SetText("Здесь будут отображаться логи рассылки")
+    logsLabel:SetWidth(200)
+    container:AddChild(logsLabel)
+end
+
+-- Функция отображения главного окна
+function RaidMail:ShowFrame()
+    self.frame:Show()
+end
+
+-- Функция отправки сообщения
+function RaidMail:SendMail()
+    local names = self:ProcessString(self.raidListEditBox1:GetText())
+    local cash_list = self:CastCash(self.raidListEditBox2:GetText())
+
+
+    --print(#names)
+    --print(#cash_list)
+
     if #names ~= #cash_list then
-        errorMessage:SetText("Длины списков не равны")
-        errorMessage:Show()
+        self.errorMessage:SetText("Длины списков не равны")
     else
-        errorMessage:Hide()
+        self.errorMessage:SetText("")
+        -- Ваш код для отправки почты
         for i, word in ipairs(names) do
             print(word)
         end
@@ -138,62 +144,10 @@ sendButton:SetScript("OnClick", function()
             print(el)
         end
     end
-
-    --frame:Hide()  -- скрываем окно после отправки сообщения
-end)
-
-
-
--- Создаем кнопку для закрытия фрейма
-local closeButton = CreateFrame("Button", "RaidMailCloseButton", frame, "UIPanelCloseButton")
-closeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -10, -10)
-closeButton:SetScript("OnClick", function()
-    frame:Hide() -- Скрываем фрейм при нажатии на кнопку закрытия
-end)
-
--- Создаем кнопку "GbitPost"
-local gbitPostButton = CreateFrame("Button", "GbitPostButton", SendMailFrame, "UIPanelButtonTemplate")
-gbitPostButton:SetText("GbitPost")
-gbitPostButton:SetSize(100, 25)
-gbitPostButton:SetPoint("TOPLEFT", SendMailFrame, "TOPRIGHT", 10, -10)
-
-
-
--- Устанавливаем обработчик события нажатия на кнопку
-gbitPostButton:SetScript("OnClick", function()
-    frame:Show() -- Показываем наше окно для почтовой рассылки
-end)
-
--- Обработчик события для отслеживания открытия стандартного окна отправки почты
-local function OnMailFrameOpened()
-    if SendMailFrame:IsVisible() then
-        -- Размещаем кнопку "GbitPost" в стандартном окне отправки почты
-        gbitPostButton:Show()
-    else
-        -- Если стандартное окно отправки почты скрыто, скрываем и кнопку "GbitPost"
-        gbitPostButton:Hide()
-    end
 end
 
--- Регистрируем обработчик события для открытия стандартного окна отправки почты
-SendMailFrame:HookScript("OnShow", OnMailFrameOpened)
-SendMailFrame:HookScript("OnHide", OnMailFrameOpened)
-
--- Функция для отправки сообщения на почту выбранным участникам рейда
-function SendMailToRaid(message, gold, raidList)
-    for _, name in ipairs(raidList) do
-        SetSendMailMoney(gold * 10000)
-        SendMail(name, "Сообщение от аддона RaidMail", message)
-    end
-end
-
--- Обработчик события для отображения окна интерфейса
-local function ShowRaidMailFrame()
-    frame:Show()
-end
-
--- функция преобразование строки в список имен с отбрасыванием части до символа "`"
-function process_string(input_str)
+-- Функция обработки строки
+function RaidMail:ProcessString(input_str)
     local words = {}
     for word in string.gmatch(input_str, "%S+") do
         -- Удаляем часть до символа ` включительно
@@ -203,7 +157,8 @@ function process_string(input_str)
     return words
 end
 
-function cast_cash(inputString)
+-- Функция преобразования строки в список чисел
+function RaidMail:CastCash(inputString)
     local intList = {}
     for line in inputString:gmatch("[^\n]+") do
         -- Удаляем пробелы и преобразуем в число
@@ -221,7 +176,3 @@ function cast_cash(inputString)
     end
     return intList
 end
-
--- Регистрируем команду для отображения окна интерфейса (для тестирования)
-SLASH_RAIDMAIL1 = "/raidmail"
-SlashCmdList["RAIDMAIL"] = ShowRaidMailFrame
