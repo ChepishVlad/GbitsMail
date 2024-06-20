@@ -7,6 +7,7 @@ local AceGUI = LibStub("AceGUI-3.0")
 function RaidMail:OnInitialize()
     self:CreateMainFrame()
     self:RegisterChatCommand("raidmail", "ShowFrame")
+    self:CreateGbitPostButton()
 end
 
 -- Создаем главное окно интерфейса
@@ -28,6 +29,31 @@ function RaidMail:CreateMainFrame()
     end)
     tabGroup:SelectTab("mail")
     frame:AddChild(tabGroup)
+end
+
+-- Создаем кнопку "GbitPost"
+function RaidMail:CreateGbitPostButton()
+    self.gbitPostButton = CreateFrame("Button", "GbitPostButton", SendMailFrame, "UIPanelButtonTemplate")
+    self.gbitPostButton:SetText("GbitPost")
+    self.gbitPostButton:SetSize(100, 25)
+    self.gbitPostButton:SetPoint("TOPLEFT", SendMailFrame, "TOPRIGHT", 10, -10)
+    self.gbitPostButton:SetScript("OnClick", function()
+        self:ShowFrame()
+    end)
+    self.gbitPostButton:Hide()  -- скрываем кнопку при создании
+
+    -- Обработчик события для отслеживания открытия стандартного окна отправки почты
+    local function OnMailFrameOpened()
+        if SendMailFrame:IsVisible() then
+            self.gbitPostButton:Show()
+        else
+            self.gbitPostButton:Hide()
+        end
+    end
+
+    -- Регистрируем обработчик события для открытия стандартного окна отправки почты
+    SendMailFrame:HookScript("OnShow", OnMailFrameOpened)
+    SendMailFrame:HookScript("OnHide", OnMailFrameOpened)
 end
 
 -- Функция для отображения контента в зависимости от выбранной вкладки
@@ -143,6 +169,7 @@ function RaidMail:SendMail()
         for i, el in ipairs(cash_list) do
             print(el)
         end
+        self:SendMailToRaid(names, cash_list)
     end
 end
 
@@ -175,4 +202,14 @@ function RaidMail:CastCash(inputString)
         end
     end
     return intList
+end
+
+function RaidMail:SendMailToRaid(names, cash_list)
+    for i = 1, #names do
+        name = names[i]
+        amount = cash_list[i]
+        SetSendMailMoney(cash_list[i] * 10000)
+        SendMail(name, "Mail from GbitPost addon", "Here is your cash, Baby ;)")
+        print("Mail with amount " .. amount .. " was sent to " .. name)
+    end
 end
