@@ -1,6 +1,6 @@
 local addonName, addonTable = ...
 
-local RaidMail = LibStub("AceAddon-3.0"):NewAddon("RaidMail", "AceConsole-3.0", "AceEvent-3.0")
+local RaidMail = LibStub("AceAddon-3.0"):NewAddon("RaidMail", "AceConsole-3.0", "AceEvent-3.0", "AceTimer-3.0")
 local AceGUI = LibStub("AceGUI-3.0")
 
 -- Функция инициализации аддона
@@ -154,21 +154,17 @@ function RaidMail:SendMail()
     local names = self:ProcessString(self.raidListEditBox1:GetText())
     local cash_list = self:CastCash(self.raidListEditBox2:GetText())
 
-
-    --print(#names)
-    --print(#cash_list)
-
     if #names ~= #cash_list then
         self.errorMessage:SetText("Длины списков не равны")
     else
         self.errorMessage:SetText("")
         -- Ваш код для отправки почты
-        for i, word in ipairs(names) do
-            print(word)
-        end
-        for i, el in ipairs(cash_list) do
-            print(el)
-        end
+        --for i, word in ipairs(names) do
+        --    print(word)
+        --end
+        --for i, el in ipairs(cash_list) do
+        --    print(el)
+        --end
         self:SendMailToRaid(names, cash_list)
     end
 end
@@ -205,11 +201,29 @@ function RaidMail:CastCash(inputString)
 end
 
 function RaidMail:SendMailToRaid(names, cash_list)
-    for i = 1, #names do
-        name = names[i]
-        amount = cash_list[i]
-        SetSendMailMoney(cash_list[i] * 10000)
-        SendMail(name, "Mail from GbitPost addon", "Here is your cash, Baby ;)")
-        print("Mail with amount " .. amount .. " was sent to " .. name)
+    self.currentIndex = 1
+    self.names = names
+    self.cash_list = cash_list
+
+    self:SendNextMail()
+end
+
+-- Функция отправки следующего письма
+function RaidMail:SendNextMail()
+    if self.currentIndex > #self.names then
+        print("Все письма отправлены.")
+        return
     end
+
+    local name = self.names[self.currentIndex]
+    local amount = self.cash_list[self.currentIndex]
+
+    SetSendMailMoney(amount * 10000)
+    SendMail(name, "Mail from GbitPost addon", "Here is your cash, Bitch ;)")
+    print("Mail with amount " .. amount .. " was sent to " .. name)
+
+    self.currentIndex = self.currentIndex + 1
+
+    -- Используем таймер для задержки между отправками
+    self:ScheduleTimer("SendNextMail", 1)  -- Задержка в 1 секунду
 end
