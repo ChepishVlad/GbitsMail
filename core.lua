@@ -158,13 +158,6 @@ function RaidMail:SendMail()
         self.errorMessage:SetText("Длины списков не равны")
     else
         self.errorMessage:SetText("")
-        -- Ваш код для отправки почты
-        --for i, word in ipairs(names) do
-        --    print(word)
-        --end
-        --for i, el in ipairs(cash_list) do
-        --    print(el)
-        --end
         self:SendMailToRaid(names, cash_list)
     end
 end
@@ -218,12 +211,27 @@ function RaidMail:SendNextMail()
     local name = self.names[self.currentIndex]
     local amount = self.cash_list[self.currentIndex]
 
+    -- Сохраняем текущее состояние полей
+    local previousRecipient = SendMailNameEditBox:GetText()
+    local previousMoney = GetSendMailMoney()
+
+    -- Устанавливаем значения для отправки
+    SendMailNameEditBox:SetText(name)
     SetSendMailMoney(amount * 10000)
     SendMail(name, "Mail from GbitPost addon", "Here is your cash, Bitch ;)")
-    print("Mail with amount " .. amount .. " was sent to " .. name)
+    --print("Mail with amount " .. amount .. " was sent to " .. name)
 
-    self.currentIndex = self.currentIndex + 1
+    -- Используем таймер для проверки отправки через 1 секунду
+    self:ScheduleTimer(function()
+        -- Проверяем, изменилось ли состояние полей
+        if SendMailNameEditBox:GetText() == "" and GetSendMailMoney() == 0 then
+            print("Mail with amount " .. amount .. " was sent to " .. name)
+        else
+            print("Failed to send mail to " .. name .. ". Reason: Mail system might be overloaded.")
+        end
 
-    -- Используем таймер для задержки между отправками
-    self:ScheduleTimer("SendNextMail", 1)  -- Задержка в 1 секунду
+        -- Переходим к следующему письму
+        self.currentIndex = self.currentIndex + 1
+        self:SendNextMail()
+    end, 1)
 end
