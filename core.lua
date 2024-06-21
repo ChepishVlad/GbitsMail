@@ -37,7 +37,7 @@ end
 -- Создаем кнопку "GbitPost"
 function RaidMail:CreateGbitPostButton()
     self.gbitPostButton = CreateFrame("Button", "GbitPostButton", SendMailFrame, "UIPanelButtonTemplate")
-    self.gbitPostButton:SetText("GbitPost")
+    self.gbitPostButton:SetText("GbitsMail")
     self.gbitPostButton:SetSize(100, 25)
     self.gbitPostButton:SetPoint("TOPLEFT", SendMailFrame, "TOPRIGHT", 10, -10)
     self.gbitPostButton:SetScript("OnClick", function()
