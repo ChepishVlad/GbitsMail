@@ -3,6 +3,9 @@ local addonName, addonTable = ...
 local RaidMail = LibStub("AceAddon-3.0"):NewAddon("RaidMail", "AceConsole-3.0", "AceEvent-3.0", "AceTimer-3.0")
 local AceGUI = LibStub("AceGUI-3.0")
 
+-- Массив для хранения логов
+local mailLogs = {}
+
 -- Функция инициализации аддона
 function RaidMail:OnInitialize()
     self:CreateMainFrame()
@@ -137,11 +140,25 @@ end
 
 -- Создаем содержимое вкладки "Логи рассылки"
 function RaidMail:CreateLogsTab(container)
-    -- Пока пусто
-    local logsLabel = AceGUI:Create("Label")
-    logsLabel:SetText("Здесь будут отображаться логи рассылки")
-    logsLabel:SetWidth(200)
-    container:AddChild(logsLabel)
+    -- Создаем многострочное текстовое поле для отображения логов
+    local logsEditBox = AceGUI:Create("MultiLineEditBox")
+    logsEditBox:SetLabel("Логи рассылки")
+    logsEditBox:SetFullWidth(true)
+    logsEditBox:SetFullHeight(true)
+    logsEditBox:SetNumLines(25)
+    logsEditBox:SetText(table.concat(mailLogs, "\n"))
+    logsEditBox:DisableButton(true)
+    container:AddChild(logsEditBox)
+
+    -- Сохраняем ссылку на элемент для обновления
+    self.logsEditBox = logsEditBox
+end
+
+-- Функция обновления логов
+function RaidMail:UpdateLogs()
+    if self.logsEditBox then
+        self.logsEditBox:SetText(table.concat(mailLogs, "\n"))
+    end
 end
 
 -- Функция отображения главного окна
@@ -193,6 +210,7 @@ function RaidMail:CastCash(inputString)
     return intList
 end
 
+-- Функция отправки писем с вложенным золотом
 function RaidMail:SendMailToRaid(names, cash_list)
     self.currentIndex = 1
     self.names = names
@@ -205,6 +223,8 @@ end
 function RaidMail:SendNextMail()
     if self.currentIndex > #self.names then
         print("Все письма отправлены.")
+        table.insert(mailLogs, "Все письма отправлены.")
+        self:UpdateLogs()
         return
     end
 
@@ -219,16 +239,22 @@ function RaidMail:SendNextMail()
     SendMailNameEditBox:SetText(name)
     SetSendMailMoney(amount * 10000)
     SendMail(name, "Mail from GbitPost addon", "Here is your cash, Bitch ;)")
-    --print("Mail with amount " .. amount .. " was sent to " .. name)
 
     -- Используем таймер для проверки отправки через 1 секунду
     self:ScheduleTimer(function()
         -- Проверяем, изменилось ли состояние полей
         if SendMailNameEditBox:GetText() == "" and GetSendMailMoney() == 0 then
-            print("Mail with amount " .. amount .. " was sent to " .. name)
+            local successMessage = "Mail with amount " .. amount .. " was sent to " .. name
+            print(successMessage)
+            table.insert(mailLogs, successMessage)
         else
-            print("Failed to send mail to " .. name .. ". Reason: Mail system might be overloaded.")
+            local errorMessage = "Failed to send mail to " .. name .. ". Reason: Mail system might be overloaded."
+            print(errorMessage)
+            table.insert(mailLogs, errorMessage)
         end
+        -- Восстанавливаем предыдущее состояние полей
+        SendMailNameEditBox:SetText(previousRecipient)
+        SetSendMailMoney(previousMoney)
 
         -- Переходим к следующему письму
         self.currentIndex = self.currentIndex + 1
