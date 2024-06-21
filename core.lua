@@ -261,3 +261,6 @@ function RaidMail:SendNextMail()
         self:SendNextMail()
     end, 1)
 end
+
+-- Инициализируем аддон
+RaidMail:OnInitialize()
