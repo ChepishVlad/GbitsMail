@@ -240,8 +240,9 @@ function RaidMail:SendNextMail()
     SetSendMailMoney(amount * 10000)
     SendMail(name, "Mail from GbitPost addon", "Here is your cash, Bitch ;)")
 
-    -- Используем таймер для проверки отправки через 1 секунду
+    -- Используем таймер для проверки отправки через 5 секунду (взято с запасом - на 2 секундах часть не рассылается)
     self:ScheduleTimer(function()
+        -- TODO подумать, как сделать не статическое ожидаение - а просто ретраи с задержкой в секунду или половину
         -- Проверяем, изменилось ли состояние полей
         if SendMailNameEditBox:GetText() == "" and GetSendMailMoney() == 0 then
             local successMessage = "Mail with amount " .. amount .. " was sent to " .. name
@@ -259,7 +260,7 @@ function RaidMail:SendNextMail()
         -- Переходим к следующему письму
         self.currentIndex = self.currentIndex + 1
         self:SendNextMail()
-    end, 1)
+    end, 5)
 end
 
 -- Инициализируем аддон
