@@ -76,22 +76,16 @@ function RaidMail:CreateMailTab(container)
     inlineGroup:SetFullWidth(true)
     container:AddChild(inlineGroup)
 
-    local labelGroup = AceGUI:Create("SimpleGroup")
-    labelGroup:SetLayout("Flow")
-    labelGroup:SetWidth(420) -- Установка ширины группы для размещения двух меток рядом
-    inlineGroup:AddChild(labelGroup)
+    local subjText = AceGUI:Create("EditBox")
+    subjText:SetLabel("Тема письма")
+    subjText:SetFullWidth(true)
+    inlineGroup:AddChild(subjText)
+    self.subjText = subjText
 
-    -- Создаем метку для списка участников рейда
-    local raidListLabel = AceGUI:Create("Label")
-    raidListLabel:SetText("Список участников рейда:")
-    raidListLabel:SetWidth(200)  -- Установка ширины в 200 пикселей
-    labelGroup:AddChild(raidListLabel)
+    subjText:SetCallback("OnTextChanged", function(widget, event, text)
+        self.subjTextValue = text
+    end)
 
-    -- Создаем метку для Cash
-    local raidListLabel2 = AceGUI:Create("Label")
-    raidListLabel2:SetText("Cash:")
-    raidListLabel2:SetWidth(200)  -- Установка ширины в 200 пикселей
-    labelGroup:AddChild(raidListLabel2)
 
     local editBoxGroup = AceGUI:Create("SimpleGroup")
     editBoxGroup:SetLayout("Flow")
@@ -100,7 +94,7 @@ function RaidMail:CreateMailTab(container)
 
     -- Создаем первое многострочное текстовое поле для списка участников рейда
     local raidListEditBox1 = AceGUI:Create("MultiLineEditBox")
-    raidListEditBox1:SetLabel("")
+    raidListEditBox1:SetLabel("Список участников рейда:")
     raidListEditBox1:SetWidth(200)
     raidListEditBox1:SetNumLines(20)
     editBoxGroup:AddChild(raidListEditBox1)
@@ -111,7 +105,7 @@ function RaidMail:CreateMailTab(container)
 
     -- Создаем второе многострочное текстовое поле для Cash
     local raidListEditBox2 = AceGUI:Create("MultiLineEditBox")
-    raidListEditBox2:SetLabel("")
+    raidListEditBox2:SetLabel("Cash:")
     raidListEditBox2:SetWidth(200)
     raidListEditBox2:SetNumLines(20)
     editBoxGroup:AddChild(raidListEditBox2)
@@ -170,12 +164,13 @@ end
 function RaidMail:SendMail()
     local names = self:ProcessString(self.raidListEditBox1:GetText())
     local cash_list = self:CastCash(self.raidListEditBox2:GetText())
+    local subj = self.subjTextValue or "From GbitsMail"
 
     if #names ~= #cash_list then
         self.errorMessage:SetText("Длины списков не равны")
     else
         self.errorMessage:SetText("")
-        self:SendMailToRaid(names, cash_list)
+        self:SendMailToRaid(names, cash_list, subj)
     end
 end
 
@@ -211,7 +206,8 @@ function RaidMail:CastCash(inputString)
 end
 
 -- Функция отправки писем с вложенным золотом
-function RaidMail:SendMailToRaid(names, cash_list)
+function RaidMail:SendMailToRaid(names, cash_list, subj)
+    self.subj = subj
     self.currentIndex = 1
     self.names = names
     self.cash_list = cash_list
@@ -238,7 +234,7 @@ function RaidMail:SendNextMail()
     -- Устанавливаем значения для отправки
     SendMailNameEditBox:SetText(name)
     SetSendMailMoney(amount * 10000)
-    SendMail(name, "Mail from GbitPost addon", "Here is your cash, Bitch ;)")
+    SendMail(name, self.subj, "Here is your cash, Bitch ;)")
 
     -- Используем таймер для проверки отправки через 5 секунду (взято с запасом - на 2 секундах часть не рассылается)
     self:ScheduleTimer(function()
