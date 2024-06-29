@@ -96,7 +96,7 @@ function RaidMail:CreateMailTab(container)
     local raidListEditBox1 = AceGUI:Create("MultiLineEditBox")
     raidListEditBox1:SetLabel("Список участников рейда:")
     raidListEditBox1:SetWidth(200)
-    raidListEditBox1:SetNumLines(20)
+    raidListEditBox1:SetNumLines(18)
     editBoxGroup:AddChild(raidListEditBox1)
     self.raidListEditBox1 = raidListEditBox1
 
@@ -107,7 +107,7 @@ function RaidMail:CreateMailTab(container)
     local raidListEditBox2 = AceGUI:Create("MultiLineEditBox")
     raidListEditBox2:SetLabel("Cash:")
     raidListEditBox2:SetWidth(200)
-    raidListEditBox2:SetNumLines(20)
+    raidListEditBox2:SetNumLines(18)
     editBoxGroup:AddChild(raidListEditBox2)
     self.raidListEditBox2 = raidListEditBox2
 
@@ -126,7 +126,7 @@ function RaidMail:CreateMailTab(container)
     -- Создаем текстовый элемент для отображения сообщений об ошибках
     local errorMessage = AceGUI:Create("Label")
     errorMessage:SetText("")
-    errorMessage:SetWidth(200)
+    errorMessage:SetWidth(400)
     errorMessage:SetColor(1, 0, 0)  -- Установка цвета текста в красный
     inlineGroup:AddChild(errorMessage)
     self.errorMessage = errorMessage
@@ -165,9 +165,15 @@ function RaidMail:SendMail()
     local names = self:ProcessString(self.raidListEditBox1:GetText())
     local cash_list = self:CastCash(self.raidListEditBox2:GetText())
     local subj = self.subjTextValue or "From GbitsMail"
+    local self_cash = GetMoney()
+    local total_cash = self:SumCashList(cash_list)
+    local sum_of_sending = (total_cash * 10000) + (#cash_list * 30)
 
     if #names ~= #cash_list then
         self.errorMessage:SetText("Длины списков не равны")
+    elseif self_cash < sum_of_sending then
+        local message = ("Недостаточно средств для рассылки всем участникам. Требуется: %dг %dс %dм"):format(sum_of_sending / 100 / 100, (sum_of_sending / 100) % 100, sum_of_sending % 100);
+        self.errorMessage:SetText(message)
     else
         self.errorMessage:SetText("")
         self:SendMailToRaid(names, cash_list, subj)
@@ -205,6 +211,14 @@ function RaidMail:CastCash(inputString)
     return intList
 end
 
+function RaidMail:SumCashList(cash_list)
+    local sum = 0
+    for _, value in ipairs(cash_list) do
+        sum = sum + tonumber(value)
+    end
+    return sum
+end
+
 -- Функция отправки писем с вложенным золотом
 function RaidMail:SendMailToRaid(names, cash_list, subj)
     self.subj = subj
@@ -234,7 +248,7 @@ function RaidMail:SendNextMail()
     -- Устанавливаем значения для отправки
     SendMailNameEditBox:SetText(name)
     SetSendMailMoney(amount * 10000)
-    SendMail(name, self.subj, "Here is your cash, Bitch ;)")
+    SendMail(name, self.subj, "Thank You for the raid. Here is your part of cash.")
 
     -- Используем таймер для проверки отправки через 5 секунду (взято с запасом - на 2 секундах часть не рассылается)
     self:ScheduleTimer(function()
@@ -245,7 +259,7 @@ function RaidMail:SendNextMail()
             print(successMessage)
             table.insert(mailLogs, successMessage)
         else
-            local errorMessage = "Failed to send mail to " .. name .. ". Reason: Mail system might be overloaded."
+            local errorMessage = "Failed to send mail to " .. name .. "."
             print(errorMessage)
             table.insert(mailLogs, errorMessage)
         end
