@@ -2,31 +2,42 @@ local addonName, addonTable = ...
 
 local RaidMail = LibStub("AceAddon-3.0"):NewAddon("RaidMail", "AceConsole-3.0", "AceEvent-3.0", "AceTimer-3.0")
 local AceGUI = LibStub("AceGUI-3.0")
+local AceDB = LibStub("AceDB-3.0")
 
--- Массив для хранения логов
 local mailLogs = {}
 
--- Функция инициализации аддона
 function RaidMail:OnInitialize()
+
+    self.db = AceDB:New("RaidMailDB", {
+        profile = {
+            Raids = {}
+        }
+    }, true)
     self:CreateMainFrame()
     self:RegisterChatCommand("raidmail", "ShowFrame")
     self:CreateGbitPostButton()
 end
 
--- Создаем главное окно интерфейса
+-- Main frame
 function RaidMail:CreateMainFrame()
     local frame = AceGUI:Create("Frame")
     frame:SetTitle(addonName)
     frame:SetStatusText("")
     frame:SetLayout("Fill")
     frame:SetWidth(500)
-    frame:SetHeight(550)
-    frame:Hide()  -- скрываем окно при создании
+    frame:SetHeight(580)
+    frame:Hide()
     self.frame = frame
 
-    -- Создаем вкладки
+    -- Tabs creating
     local tabGroup = AceGUI:Create("TabGroup")
-    tabGroup:SetTabs({{text="Рассылка", value="mail"}, {text="Логи рассылки", value="logs"}})
+    tabGroup:SetTabs(
+            {
+                {text="Рассылка", value="mail"},
+                {text="Логи рассылки", value="logs"},
+                --{text="Рейд", value="raid"}
+            }
+    )
     tabGroup:SetCallback("OnGroupSelected", function(container, event, group)
         self:SelectGroup(container, group)
     end)
@@ -34,7 +45,7 @@ function RaidMail:CreateMainFrame()
     frame:AddChild(tabGroup)
 end
 
--- Создаем кнопку "GbitPost"
+-- "GbitsMail button"
 function RaidMail:CreateGbitPostButton()
     self.gbitPostButton = CreateFrame("Button", "GbitPostButton", SendMailFrame, "UIPanelButtonTemplate")
     self.gbitPostButton:SetText("GbitsMail")
@@ -43,9 +54,8 @@ function RaidMail:CreateGbitPostButton()
     self.gbitPostButton:SetScript("OnClick", function()
         self:ShowFrame()
     end)
-    self.gbitPostButton:Hide()  -- скрываем кнопку при создании
+    self.gbitPostButton:Hide()
 
-    -- Обработчик события для отслеживания открытия стандартного окна отправки почты
     local function OnMailFrameOpened()
         if SendMailFrame:IsVisible() then
             self.gbitPostButton:Show()
@@ -54,22 +64,23 @@ function RaidMail:CreateGbitPostButton()
         end
     end
 
-    -- Регистрируем обработчик события для открытия стандартного окна отправки почты
     SendMailFrame:HookScript("OnShow", OnMailFrameOpened)
     SendMailFrame:HookScript("OnHide", OnMailFrameOpened)
 end
 
--- Функция для отображения контента в зависимости от выбранной вкладки
+-- Tabs content
 function RaidMail:SelectGroup(container, group)
     container:ReleaseChildren()
     if group == "mail" then
         self:CreateMailTab(container)
     elseif group == "logs" then
         self:CreateLogsTab(container)
+    elseif group == "raid" then
+        self:CreateRaidTab(container)
     end
 end
 
--- Создаем содержимое вкладки "Рассылка"
+-- Sanding mail tab content
 function RaidMail:CreateMailTab(container)
     local inlineGroup = AceGUI:Create("InlineGroup")
     inlineGroup:SetLayout("Flow")
@@ -77,64 +88,56 @@ function RaidMail:CreateMailTab(container)
     container:AddChild(inlineGroup)
 
     local subjText = AceGUI:Create("EditBox")
-    subjText:SetLabel("Тема письма")
+    subjText:SetLabel("Subject")
     subjText:SetFullWidth(true)
     inlineGroup:AddChild(subjText)
     self.subjText = subjText
 
+    -- some trick for getting text from subject field
     subjText:SetCallback("OnTextChanged", function(widget, event, text)
         self.subjTextValue = text
     end)
 
-
     local editBoxGroup = AceGUI:Create("SimpleGroup")
     editBoxGroup:SetLayout("Flow")
-    editBoxGroup:SetWidth(420) -- Установка ширины группы для размещения двух полей рядом
+    editBoxGroup:SetWidth(420)
     inlineGroup:AddChild(editBoxGroup)
 
-    -- Создаем первое многострочное текстовое поле для списка участников рейда
     local raidListEditBox1 = AceGUI:Create("MultiLineEditBox")
-    raidListEditBox1:SetLabel("Список участников рейда:")
+    raidListEditBox1:SetLabel("Raid members list:")
     raidListEditBox1:SetWidth(200)
     raidListEditBox1:SetNumLines(18)
     editBoxGroup:AddChild(raidListEditBox1)
     self.raidListEditBox1 = raidListEditBox1
-
-    -- Скрываем кнопку "Принять" у первого поля
     raidListEditBox1.button:Hide()
 
-    -- Создаем второе многострочное текстовое поле для Cash
     local raidListEditBox2 = AceGUI:Create("MultiLineEditBox")
     raidListEditBox2:SetLabel("Cash:")
     raidListEditBox2:SetWidth(200)
     raidListEditBox2:SetNumLines(18)
     editBoxGroup:AddChild(raidListEditBox2)
     self.raidListEditBox2 = raidListEditBox2
-
-    -- Скрываем кнопку "Принять" у первого поля
     raidListEditBox2.button:Hide()
 
-    -- Создаем кнопку для отправки сообщения
     local sendButton = AceGUI:Create("Button")
-    sendButton:SetText("Отправить")
+    sendButton:SetText("Send")
     sendButton:SetWidth(200)
     sendButton:SetCallback("OnClick", function()
         self:SendMail()
     end)
     inlineGroup:AddChild(sendButton)
 
-    -- Создаем текстовый элемент для отображения сообщений об ошибках
+    -- Error messages
     local errorMessage = AceGUI:Create("Label")
     errorMessage:SetText("")
     errorMessage:SetWidth(400)
-    errorMessage:SetColor(1, 0, 0)  -- Установка цвета текста в красный
+    errorMessage:SetColor(1, 0, 0)
     inlineGroup:AddChild(errorMessage)
     self.errorMessage = errorMessage
 end
 
--- Создаем содержимое вкладки "Логи рассылки"
+-- Mail log tab content
 function RaidMail:CreateLogsTab(container)
-    -- Создаем многострочное текстовое поле для отображения логов
     local logsEditBox = AceGUI:Create("MultiLineEditBox")
     logsEditBox:SetLabel("Логи рассылки")
     logsEditBox:SetFullWidth(true)
@@ -144,23 +147,22 @@ function RaidMail:CreateLogsTab(container)
     logsEditBox:DisableButton(true)
     container:AddChild(logsEditBox)
 
-    -- Сохраняем ссылку на элемент для обновления
     self.logsEditBox = logsEditBox
 end
 
--- Функция обновления логов
+-- Logs update function
+-- need to make it with AceDB
 function RaidMail:UpdateLogs()
     if self.logsEditBox then
         self.logsEditBox:SetText(table.concat(mailLogs, "\n"))
     end
 end
 
--- Функция отображения главного окна
+-- Main window visibility
 function RaidMail:ShowFrame()
     self.frame:Show()
 end
 
--- Функция отправки сообщения
 function RaidMail:SendMail()
     local names = self:ProcessString(self.raidListEditBox1:GetText())
     local cash_list = self:CastCash(self.raidListEditBox2:GetText())
@@ -169,8 +171,10 @@ function RaidMail:SendMail()
     local total_cash = self:SumCashList(cash_list)
     local sum_of_sending = (total_cash * 10000) + (#cash_list * 30)
 
-    if #names ~= #cash_list then
-        self.errorMessage:SetText("Длины списков не равны")
+    if #names == 0 then
+        self.errorMessage:SetText("Список рассылки пуст.")
+    elseif #names ~= #cash_list then
+        self.errorMessage:SetText("Длины списков не равны.")
     elseif self_cash < sum_of_sending then
         local message = ("Недостаточно средств для рассылки всем участникам. Требуется: %dг %dс %dм"):format(sum_of_sending / 100 / 100, (sum_of_sending / 100) % 100, sum_of_sending % 100);
         self.errorMessage:SetText(message)
@@ -180,7 +184,8 @@ function RaidMail:SendMail()
     end
 end
 
--- Функция обработки строки
+
+-- some helper functions
 function RaidMail:ProcessString(input_str)
     local words = {}
     for word in string.gmatch(input_str, "%S+") do
@@ -191,11 +196,9 @@ function RaidMail:ProcessString(input_str)
     return words
 end
 
--- Функция преобразования строки в список чисел
 function RaidMail:CastCash(inputString)
     local intList = {}
     for line in inputString:gmatch("[^\n]+") do
-        -- Удаляем пробелы и преобразуем в число
         local value = ""
         for i = 1, #line do
             local char = line:sub(i, i)
@@ -219,7 +222,6 @@ function RaidMail:SumCashList(cash_list)
     return sum
 end
 
--- Функция отправки писем с вложенным золотом
 function RaidMail:SendMailToRaid(names, cash_list, subj)
     self.subj = subj
     self.currentIndex = 1
@@ -229,7 +231,6 @@ function RaidMail:SendMailToRaid(names, cash_list, subj)
     self:SendNextMail()
 end
 
--- Функция отправки следующего письма
 function RaidMail:SendNextMail()
     if self.currentIndex > #self.names then
         print("Все письма отправлены.")
@@ -241,11 +242,10 @@ function RaidMail:SendNextMail()
     local name = self.names[self.currentIndex]
     local amount = self.cash_list[self.currentIndex]
 
-    -- Сохраняем текущее состояние полей
+    -- Saving fields current status
     local previousRecipient = SendMailNameEditBox:GetText()
     local previousMoney = GetSendMailMoney()
 
-    -- Устанавливаем значения для отправки
     SendMailNameEditBox:SetText(name)
     SetSendMailMoney(amount * 10000)
     SendMail(name, self.subj, "Thank You for the raid. Here is your part of cash.")
@@ -253,13 +253,13 @@ function RaidMail:SendNextMail()
     -- Используем таймер для проверки отправки через 5 секунду (взято с запасом - на 2 секундах часть не рассылается)
     self:ScheduleTimer(function()
         -- TODO подумать, как сделать не статическое ожидаение - а просто ретраи с задержкой в секунду или половину
-        -- Проверяем, изменилось ли состояние полей
         if SendMailNameEditBox:GetText() == "" and GetSendMailMoney() == 0 then
-            local successMessage = "Mail with amount " .. amount .. " was sent to " .. name
+            local successMessage = "Письмо с суммой " .. amount .. " было отправлено " .. name
             print(successMessage)
             table.insert(mailLogs, successMessage)
         else
-            local errorMessage = "Failed to send mail to " .. name .. "."
+            -- TODO обрабатывать разные причины сбоя отправки
+            local errorMessage = "Отправка письма " .. name .. " не уадалсь."
             print(errorMessage)
             table.insert(mailLogs, errorMessage)
         end
@@ -273,5 +273,4 @@ function RaidMail:SendNextMail()
     end, 5)
 end
 
--- Инициализируем аддон
 RaidMail:OnInitialize()
