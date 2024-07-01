@@ -16,6 +16,31 @@ function RaidMail:OnInitialize()
     self:CreateMainFrame()
     self:RegisterChatCommand("raidmail", "ShowFrame")
     self:CreateGbitPostButton()
+
+    -- Register event handlers for mail send success and failure
+    self:RegisterEvent("MAIL_SEND_SUCCESS", "OnMailSendSuccess")
+    self:RegisterEvent("MAIL_FAILED", "OnMailFailed")
+end
+
+-- Event handler for successful mail send
+function RaidMail:OnMailSendSuccess()
+    local name = self.names[self.currentIndex]
+    local amount = self.cash_list[self.currentIndex]
+    local successMessage = "Письмо с суммой " .. amount .. " было отправлено " .. name
+    print(successMessage)
+    table.insert(mailLogs, successMessage)
+    self:UpdateLogs()
+    self:ProceedToNextMail()
+end
+
+-- Event handler for failed mail send
+function RaidMail:OnMailFailed()
+    local name = self.names[self.currentIndex]
+    local errorMessage = "Отправка письма " .. name .. " не удалась."
+    print(errorMessage)
+    table.insert(mailLogs, errorMessage)
+    self:UpdateLogs()
+    self:ProceedToNextMail()
 end
 
 -- Main frame
@@ -249,7 +274,9 @@ function RaidMail:SendNextMail()
     SendMailNameEditBox:SetText(name)
     SetSendMailMoney(amount * 10000)
     SendMail(name, self.subj, "Thank You for the raid. Here is your part of cash.")
+end
 
+--[[
     -- Используем таймер для проверки отправки через 5 секунду (взято с запасом - на 2 секундах часть не рассылается)
     self:ScheduleTimer(function()
         -- TODO подумать, как сделать не статическое ожидаение - а просто ретраи с задержкой в секунду или половину
@@ -270,6 +297,20 @@ function RaidMail:SendNextMail()
         -- Переходим к следующему письму
         self.currentIndex = self.currentIndex + 1
         self:SendNextMail()
+    end, 5)
+end
+]]--
+-- Proceed to the next mail in the list
+function RaidMail:ProceedToNextMail()
+    self:ScheduleTimer(function()
+        self.currentIndex = self.currentIndex + 1
+        if self.currentIndex <= #self.names then
+            self:SendNextMail()
+        else
+            print("Все письма отправлены.")
+            table.insert(mailLogs, "Все письма отправлены.")
+            self:UpdateLogs()
+        end
     end, 5)
 end
 
