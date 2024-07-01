@@ -267,9 +267,9 @@ function RaidMail:SendNextMail()
     local name = self.names[self.currentIndex]
     local amount = self.cash_list[self.currentIndex]
 
-    -- Saving fields current status
-    local previousRecipient = SendMailNameEditBox:GetText()
-    local previousMoney = GetSendMailMoney()
+    ---- Saving fields current status
+    --local previousRecipient = SendMailNameEditBox:GetText()
+    --local previousMoney = GetSendMailMoney()
 
     SendMailNameEditBox:SetText(name)
     SetSendMailMoney(amount * 10000)
