@@ -7,12 +7,13 @@ local AceDB = LibStub("AceDB-3.0")
 local mailLogs = {}
 
 function RaidMail:OnInitialize()
-
     self.db = AceDB:New("RaidMailDB", {
         profile = {
-            Raids = {}
+            Raids = {},
+            MailLogs = {}
         }
     }, true)
+    mailLogs = self.db.profile.MailLogs
     self:CreateMainFrame()
     self:RegisterChatCommand("raidmail", "ShowFrame")
     self:CreateGbitPostButton()
@@ -60,7 +61,7 @@ function RaidMail:CreateMainFrame()
             {
                 {text="Рассылка", value="mail"},
                 {text="Логи рассылки", value="logs"},
-                --{text="Рейд", value="raid"}
+                {text="Рейд", value="raid"}
             }
     )
     tabGroup:SetCallback("OnGroupSelected", function(container, event, group)
@@ -75,7 +76,7 @@ function RaidMail:CreateGbitPostButton()
     self.gbitPostButton = CreateFrame("Button", "GbitPostButton", SendMailFrame, "UIPanelButtonTemplate")
     self.gbitPostButton:SetText("GbitsMail")
     self.gbitPostButton:SetSize(100, 25)
-    self.gbitPostButton:SetPoint("TOPLEFT", SendMailFrame, "TOPRIGHT", 10, -10)
+    self.gbitPostButton:SetPoint("TOPLEFT", SendMailFrame, "TOPRIGHT", -155, -12)
     self.gbitPostButton:SetScript("OnClick", function()
         self:ShowFrame()
     end)
@@ -152,6 +153,14 @@ function RaidMail:CreateMailTab(container)
     end)
     inlineGroup:AddChild(sendButton)
 
+    local logButton = AceGUI:Create("Button")
+    logButton:SetText("Logs")
+    logButton:SetWidth(200)
+    logButton:SetCallback("OnClick", function()
+        self:ShowMailLogsPopup()
+    end)
+    inlineGroup:AddChild(logButton)
+
     -- Error messages
     local errorMessage = AceGUI:Create("Label")
     errorMessage:SetText("")
@@ -181,11 +190,35 @@ function RaidMail:UpdateLogs()
     if self.logsEditBox then
         self.logsEditBox:SetText(table.concat(mailLogs, "\n"))
     end
+    self.db.profile.MailLogs = mailLogs
 end
 
 -- Main window visibility
 function RaidMail:ShowFrame()
     self.frame:Show()
+end
+
+-- Show Mail Logs Popup
+function RaidMail:ShowMailLogsPopup()
+    local popupFrame = AceGUI:Create("Frame")
+    popupFrame:SetTitle("Логи рассылки")
+    popupFrame:SetStatusText("")
+    popupFrame:SetLayout("Fill")
+    popupFrame:SetWidth(500)
+    popupFrame:SetHeight(400)
+
+    local logsEditBox = AceGUI:Create("MultiLineEditBox")
+    logsEditBox:SetLabel("")
+    logsEditBox:SetFullWidth(true)
+    logsEditBox:SetFullHeight(true)
+    logsEditBox:SetNumLines(20)
+    logsEditBox:SetText(table.concat(mailLogs, "\n"))
+    logsEditBox:DisableButton(true)
+    popupFrame:AddChild(logsEditBox)
+
+    popupFrame:SetCallback("OnClose", function(widget)
+        AceGUI:Release(widget)
+    end)
 end
 
 function RaidMail:SendMail()
@@ -272,7 +305,8 @@ function RaidMail:SendNextMail()
     --local previousMoney = GetSendMailMoney()
 
     SendMailNameEditBox:SetText(name)
-    SetSendMailMoney(amount * 10000)
+    --SetSendMailMoney(amount * 10000)
+    SetSendMailMoney(amount)
     SendMail(name, self.subj, "Thank You for the raid. Here is your part of cash.")
 end
 
@@ -308,7 +342,7 @@ function RaidMail:ProceedToNextMail()
             self:SendNextMail()
         else
             print("Все письма отправлены.")
-            table.insert(mailLogs, "Все письма отправлены.")
+            --table.insert(mailLogs, "Все письма отправлены.")
             self:UpdateLogs()
         end
     end, 5)
