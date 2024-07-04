@@ -190,9 +190,23 @@ function RaidMail:StopSending()
     table.insert(mailLogs, message)
 end
 
+function RaidMail:GenerateRichTextLogs()
+    local richText = ""
+    for _, log in ipairs(mailLogs) do
+        if log:find("было отправлено") then
+            richText = richText .. "|cff00ff00|h" .. log .. "|h|r\n"  -- Green for success
+        elseif log:find("не удалась") then
+            richText = richText .. "|cffff0000" .. log .. "|r\n"  -- Red for failure
+        else
+            richText = richText .. log .. "\n"
+        end
+    end
+    return richText
+end
+
 function RaidMail:UpdateLogs()
-    if self.logsEditBox then
-        self.logsEditBox:SetText(table.concat(mailLogs, "\n"))
+    if self.logsLabel then
+        self.logsLabel:SetText(self:GenerateRichTextLogs())
     end
     self.db.profile.MailLogs = mailLogs
 end
@@ -220,18 +234,18 @@ function RaidMail:ShowMailLogsPopup()
     popupFrame:SetWidth(500)
     popupFrame:SetHeight(400)
 
-    local logsEditBox = AceGUI:Create("MultiLineEditBox")
-    logsEditBox:SetLabel("")
-    logsEditBox:SetFullWidth(true)
-    logsEditBox:SetFullHeight(true)
-    logsEditBox:SetNumLines(20)
-    logsEditBox:SetText(table.concat(mailLogs, "\n"))
-    logsEditBox:DisableButton(true)
-    popupFrame:AddChild(logsEditBox)
+    local logsLabel = AceGUI:Create("Label")
+    logsLabel:SetFullWidth(true)
+    logsLabel:SetFullHeight(true)
+    logsLabel:SetFontObject(GameFontHighlightSmall)
+    logsLabel:SetText(self:GenerateRichTextLogs())
+    popupFrame:AddChild(logsLabel)
 
     popupFrame:SetCallback("OnClose", function(widget)
         AceGUI:Release(widget)
     end)
+
+    self.logsLabel = logsLabel
 end
 
 function RaidMail:SendMail()
