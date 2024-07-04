@@ -2,7 +2,7 @@
 ## Title: GbitsMail
 ## Notes: Addon for sending money after Gbit raid
 ## Author: VTsepish
-## Version: 0.1
+## Version: 0.2
 ## SavedVariables: RaidMailDB
 
 # Required libraries
