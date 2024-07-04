@@ -150,6 +150,14 @@ function RaidMail:CreateMailTab(container)
     end)
     inlineGroup:AddChild(sendButton)
 
+    local stopButton = AceGUI:Create("Button")
+    stopButton:SetText("Stop sending")
+    stopButton:SetWidth(150)
+    stopButton:SetCallback("OnClick", function()
+        self:StopSending()
+    end)
+    inlineGroup:AddChild(stopButton)
+
     local logButton = AceGUI:Create("Button")
     logButton:SetText("Logs")
     logButton:SetWidth(100)
@@ -175,8 +183,13 @@ function RaidMail:CreateMailTab(container)
     self.errorMessage = errorMessage
 end
 
--- Logs update function
--- need to make it with AceDB
+function RaidMail:StopSending()
+    self.currentIndex  = #self.names
+    local message = "Рассылка " .. self.subj .. " была остановлена"
+    print(message)
+    table.insert(mailLogs, message)
+end
+
 function RaidMail:UpdateLogs()
     if self.logsEditBox then
         self.logsEditBox:SetText(table.concat(mailLogs, "\n"))
@@ -184,7 +197,6 @@ function RaidMail:UpdateLogs()
     self.db.profile.MailLogs = mailLogs
 end
 
--- Clear Mail Logs
 function RaidMail:ClearMailLogs()
     mailLogs = {}
     self.db.profile.MailLogs = mailLogs
@@ -315,7 +327,9 @@ function RaidMail:ProceedToNextMail()
         if self.currentIndex <= #self.names then
             self:SendNextMail()
         else
-            print("Все письма отправлены.")
+            local endMessage = string.format("Рассылка %s закончена.", self.subj)
+            print(endMessage)
+            table.insert(mailLogs, endMessage)
             self:UpdateLogs()
         end
     end, 5)
