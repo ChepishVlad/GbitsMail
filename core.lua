@@ -60,7 +60,6 @@ function RaidMail:CreateMainFrame()
     tabGroup:SetTabs(
             {
                 {text="Рассылка", value="mail"},
-                {text="Логи рассылки", value="logs"},
                 {text="Рейд", value="raid"}
             }
     )
@@ -99,8 +98,6 @@ function RaidMail:SelectGroup(container, group)
     container:ReleaseChildren()
     if group == "mail" then
         self:CreateMailTab(container)
-    elseif group == "logs" then
-        self:CreateLogsTab(container)
     elseif group == "raid" then
         self:CreateRaidTab(container)
     end
@@ -147,15 +144,23 @@ function RaidMail:CreateMailTab(container)
 
     local sendButton = AceGUI:Create("Button")
     sendButton:SetText("Send")
-    sendButton:SetWidth(200)
+    sendButton:SetWidth(100)
     sendButton:SetCallback("OnClick", function()
         self:SendMail()
     end)
     inlineGroup:AddChild(sendButton)
 
+    local clearLogButton = AceGUI:Create("Button")
+    clearLogButton:SetText("Clear logs")
+    clearLogButton:SetWidth(100)
+    clearLogButton:SetCallback("OnClick", function()
+        self:ClearMailLogs()
+    end)
+    inlineGroup:AddChild(clearLogButton)
+
     local logButton = AceGUI:Create("Button")
     logButton:SetText("Logs")
-    logButton:SetWidth(200)
+    logButton:SetWidth(100)
     logButton:SetCallback("OnClick", function()
         self:ShowMailLogsPopup()
     end)
@@ -170,20 +175,6 @@ function RaidMail:CreateMailTab(container)
     self.errorMessage = errorMessage
 end
 
--- Mail log tab content
-function RaidMail:CreateLogsTab(container)
-    local logsEditBox = AceGUI:Create("MultiLineEditBox")
-    logsEditBox:SetLabel("Логи рассылки")
-    logsEditBox:SetFullWidth(true)
-    logsEditBox:SetFullHeight(true)
-    logsEditBox:SetNumLines(25)
-    logsEditBox:SetText(table.concat(mailLogs, "\n"))
-    logsEditBox:DisableButton(true)
-    container:AddChild(logsEditBox)
-
-    self.logsEditBox = logsEditBox
-end
-
 -- Logs update function
 -- need to make it with AceDB
 function RaidMail:UpdateLogs()
@@ -191,6 +182,16 @@ function RaidMail:UpdateLogs()
         self.logsEditBox:SetText(table.concat(mailLogs, "\n"))
     end
     self.db.profile.MailLogs = mailLogs
+end
+
+-- Clear Mail Logs
+function RaidMail:ClearMailLogs()
+    mailLogs = {}
+    self.db.profile.MailLogs = mailLogs
+    if self.logsEditBox then
+        self.logsEditBox:SetText("")
+    end
+    print("Логи рассылки очищены.")
 end
 
 -- Main window visibility
@@ -285,6 +286,7 @@ function RaidMail:SendMailToRaid(names, cash_list, subj)
     self.currentIndex = 1
     self.names = names
     self.cash_list = cash_list
+    table.insert(mailLogs, "Рассылка с темой " .. subj)
 
     self:SendNextMail()
 end
@@ -300,40 +302,12 @@ function RaidMail:SendNextMail()
     local name = self.names[self.currentIndex]
     local amount = self.cash_list[self.currentIndex]
 
-    ---- Saving fields current status
-    --local previousRecipient = SendMailNameEditBox:GetText()
-    --local previousMoney = GetSendMailMoney()
 
     SendMailNameEditBox:SetText(name)
-    --SetSendMailMoney(amount * 10000)
-    SetSendMailMoney(amount)
+    SetSendMailMoney(amount * 10000)
     SendMail(name, self.subj, "Thank You for the raid. Here is your part of cash.")
 end
 
---[[
-    -- Используем таймер для проверки отправки через 5 секунду (взято с запасом - на 2 секундах часть не рассылается)
-    self:ScheduleTimer(function()
-        -- TODO подумать, как сделать не статическое ожидаение - а просто ретраи с задержкой в секунду или половину
-        if SendMailNameEditBox:GetText() == "" and GetSendMailMoney() == 0 then
-            local successMessage = "Письмо с суммой " .. amount .. " было отправлено " .. name
-            print(successMessage)
-            table.insert(mailLogs, successMessage)
-        else
-            -- TODO обрабатывать разные причины сбоя отправки
-            local errorMessage = "Отправка письма " .. name .. " не уадалсь."
-            print(errorMessage)
-            table.insert(mailLogs, errorMessage)
-        end
-        -- Восстанавливаем предыдущее состояние полей
-        SendMailNameEditBox:SetText(previousRecipient)
-        SetSendMailMoney(previousMoney)
-
-        -- Переходим к следующему письму
-        self.currentIndex = self.currentIndex + 1
-        self:SendNextMail()
-    end, 5)
-end
-]]--
 -- Proceed to the next mail in the list
 function RaidMail:ProceedToNextMail()
     self:ScheduleTimer(function()
@@ -342,7 +316,6 @@ function RaidMail:ProceedToNextMail()
             self:SendNextMail()
         else
             print("Все письма отправлены.")
-            --table.insert(mailLogs, "Все письма отправлены.")
             self:UpdateLogs()
         end
     end, 5)

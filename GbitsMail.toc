@@ -3,7 +3,7 @@
 ## Notes: Addon for sending money after Gbit raid
 ## Author: VTsepish
 ## Version: 0.1
-## RequiredDeps: Ace3
+## SavedVariables: RaidMailDB
 
 # Required libraries
 Libs\AceAddon-3.0\AceAddon-3.0.xml
