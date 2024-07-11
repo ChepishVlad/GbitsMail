@@ -350,6 +350,7 @@ function RaidMail:ProceedToNextMail()
             print(endMessage)
             table.insert(mailLogs, endMessage)
             self:UpdateLogs()
+            self.names = {}
         end
     end, 5)
 end
