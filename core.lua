@@ -17,7 +17,8 @@ function RaidMail:OnInitialize()
     self:CreateMainFrame()
     self:RegisterChatCommand("raidmail", "ShowFrame")
     self:CreateGbitPostButton()
-
+    self.names = {}
+    self.cash_list = {}
     -- Register event handlers for mail send success and failure
     self:RegisterEvent("MAIL_SEND_SUCCESS", "OnMailSendSuccess")
     self:RegisterEvent("MAIL_FAILED", "OnMailFailed")
@@ -25,23 +26,27 @@ end
 
 -- Event handler for successful mail send
 function RaidMail:OnMailSendSuccess()
-    local name = self.names[self.currentIndex]
-    local amount = self.cash_list[self.currentIndex]
-    local successMessage = "Письмо с суммой " .. amount .. " было отправлено " .. name
-    print(successMessage)
-    table.insert(mailLogs, successMessage)
-    self:UpdateLogs()
-    self:ProceedToNextMail()
+    if #self.names > 0 then
+        local name = self.names[self.currentIndex]
+        local amount = self.cash_list[self.currentIndex]
+        local successMessage = "Письмо с суммой " .. amount .. " было отправлено " .. name
+        print(successMessage)
+        table.insert(mailLogs, successMessage)
+        self:UpdateLogs()
+        self:ProceedToNextMail()
+    end
 end
 
 -- Event handler for failed mail send
 function RaidMail:OnMailFailed()
-    local name = self.names[self.currentIndex]
-    local errorMessage = "Отправка письма " .. name .. " не удалась."
-    print(errorMessage)
-    table.insert(mailLogs, errorMessage)
-    self:UpdateLogs()
-    self:ProceedToNextMail()
+    if #self.names > 0 then
+        local name = self.names[self.currentIndex]
+        local errorMessage = "Отправка письма " .. name .. " не удалась."
+        print(errorMessage)
+        table.insert(mailLogs, errorMessage)
+        self:UpdateLogs()
+        self:ProceedToNextMail()
+    end
 end
 
 -- Main frame
@@ -60,7 +65,7 @@ function RaidMail:CreateMainFrame()
     tabGroup:SetTabs(
             {
                 {text="Рассылка", value="mail"},
-                {text="Рейд", value="raid"}
+                --{text="Рейд", value="raid"}
             }
     )
     tabGroup:SetCallback("OnGroupSelected", function(container, event, group)
@@ -98,8 +103,8 @@ function RaidMail:SelectGroup(container, group)
     container:ReleaseChildren()
     if group == "mail" then
         self:CreateMailTab(container)
-    elseif group == "raid" then
-        self:CreateRaidTab(container)
+    --elseif group == "raid" then
+    --    self:CreateRaidTab(container)
     end
 end
 
