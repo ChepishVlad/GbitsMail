@@ -239,12 +239,18 @@ function RaidMail:ShowMailLogsPopup()
     popupFrame:SetWidth(500)
     popupFrame:SetHeight(400)
 
+    local scrollFrame = AceGUI:Create("ScrollFrame")
+    scrollFrame:SetLayout("List")
+    scrollFrame:SetFullWidth(true)
+    scrollFrame:SetFullHeight(true)
+
     local logsLabel = AceGUI:Create("Label")
     logsLabel:SetFullWidth(true)
-    logsLabel:SetFullHeight(true)
     logsLabel:SetFontObject(GameFontHighlightSmall)
     logsLabel:SetText(self:GenerateRichTextLogs())
-    popupFrame:AddChild(logsLabel)
+    scrollFrame:AddChild(logsLabel)
+
+    popupFrame:AddChild(scrollFrame)
 
     popupFrame:SetCallback("OnClose", function(widget)
         AceGUI:Release(widget)
