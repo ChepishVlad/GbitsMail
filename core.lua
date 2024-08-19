@@ -239,24 +239,23 @@ function RaidMail:ShowMailLogsPopup()
     popupFrame:SetWidth(500)
     popupFrame:SetHeight(400)
 
-    local scrollFrame = AceGUI:Create("ScrollFrame")
-    scrollFrame:SetLayout("List")
-    scrollFrame:SetFullWidth(true)
-    scrollFrame:SetFullHeight(true)
+    -- Создаем MultiLineEditBox для логов
+    local logsEditBox = AceGUI:Create("MultiLineEditBox")
+    logsEditBox:SetFullWidth(true)
+    logsEditBox:SetFullHeight(true)
+    logsEditBox:SetText(self:GenerateRichTextLogs())
+    logsEditBox:DisableButton(true)  -- Скрыть кнопку "ОК"
 
-    local logsLabel = AceGUI:Create("Label")
-    logsLabel:SetFullWidth(true)
-    logsLabel:SetFontObject(GameFontHighlightSmall)
-    logsLabel:SetText(self:GenerateRichTextLogs())
-    scrollFrame:AddChild(logsLabel)
+    -- Добавляем EditBox в окно поп-апа
+    popupFrame:AddChild(logsEditBox)
 
-    popupFrame:AddChild(scrollFrame)
-
+    -- Обработка закрытия окна
     popupFrame:SetCallback("OnClose", function(widget)
         AceGUI:Release(widget)
     end)
 
-    self.logsLabel = logsLabel
+    -- Сохраняем ссылку для дальнейшего использования
+    self.logsEditBox = logsEditBox
 end
 
 function RaidMail:SendMail()
