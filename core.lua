@@ -5,6 +5,7 @@ local AceGUI = LibStub("AceGUI-3.0")
 local AceDB = LibStub("AceDB-3.0")
 
 local mailLogs = {}
+local raids = {}
 
 function RaidMail:OnInitialize()
     self.db = AceDB:New("RaidMailDB", {
@@ -14,6 +15,7 @@ function RaidMail:OnInitialize()
         }
     }, true)
     mailLogs = self.db.profile.MailLogs
+    raids = self.db.profile.Raids
     self:CreateMainFrame()
     self:RegisterChatCommand("raidmail", "ShowFrame")
     self:CreateGbitPostButton()
@@ -68,12 +70,11 @@ end
 
 -- Новая функция для сохранения рейда
 function RaidMail:SaveRaid()
+    local raidName = self.raidNameEditBox:GetText()
     local raiders = GetRaidersList()
 
     if #raiders > 0 then
-        -- Сохраняем рейдеров в базе данных
-        self.db.profile.Raids = raiders
-
+        table.insert(raids, {["raid_name"] = raidName, ["raiders"] = raiders})
         -- Сообщение об успешном сохранении
         print("Рейд успешно сохранен.")
 
@@ -84,7 +85,6 @@ function RaidMail:SaveRaid()
     else
         print("Не удалось сохранить рейд. Вы не в рейде.")
     end
-
 end
 
 -- Main frame
@@ -151,6 +151,12 @@ function RaidMail:CreateRaidTab(container)
     inlineGroup:SetLayout("Flow")
     inlineGroup:SetFullWidth(true)
     container:AddChild(inlineGroup)
+
+    local raidNameEditBox = AceGUI:Create("EditBox")
+    raidNameEditBox:SetLabel("Название рейда:")
+    raidNameEditBox:SetFullWidth(true)
+    inlineGroup:AddChild(raidNameEditBox)
+    self.raidNameEditBox = raidNameEditBox
 
     local saveRaidButton = AceGUI:Create("Button")
     saveRaidButton:SetText("Сохранить рейд")
