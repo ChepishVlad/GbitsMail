@@ -49,6 +49,44 @@ function RaidMail:OnMailFailed()
     end
 end
 
+local function GetRaidersList()
+    local raiders = {}
+    if IsInRaid() then
+        local numRaidMembers = GetNumGroupMembers()
+        if numRaidMembers > 0 then
+            for i = 1, numRaidMembers do
+                local name, _, subgroup, _, class, _, _, _, _, _, classFileName = GetRaidRosterInfo(i)
+                --print(name)
+                table.insert(raiders, {["name"] = name, ["group"] = subgroup, ["class"] = class, ["cashPercent"] = 100})
+            end
+        end
+    else
+        print("Вы не в рейде.")
+    end
+    return raiders
+end
+
+-- Новая функция для сохранения рейда
+function RaidMail:SaveRaid()
+    local raiders = GetRaidersList()
+
+    if #raiders > 0 then
+        -- Сохраняем рейдеров в базе данных
+        self.db.profile.Raids = raiders
+
+        -- Сообщение об успешном сохранении
+        print("Рейд успешно сохранен.")
+
+        -- Выводим имена рейдеров (опционально)
+        for _, raider in ipairs(raiders) do
+            print(string.format("Рейдер: %s, Группа: %d, Класс: %s", raider.name, raider.group, raider.class))
+        end
+    else
+        print("Не удалось сохранить рейд. Вы не в рейде.")
+    end
+
+end
+
 -- Main frame
 function RaidMail:CreateMainFrame()
     local frame = AceGUI:Create("Frame")
@@ -65,7 +103,7 @@ function RaidMail:CreateMainFrame()
     tabGroup:SetTabs(
             {
                 {text="Рассылка", value="mail"},
-                --{text="Рейд", value="raid"}
+                {text="Рейд", value="raid"}
             }
     )
     tabGroup:SetCallback("OnGroupSelected", function(container, event, group)
@@ -103,9 +141,24 @@ function RaidMail:SelectGroup(container, group)
     container:ReleaseChildren()
     if group == "mail" then
         self:CreateMailTab(container)
-    --elseif group == "raid" then
-    --    self:CreateRaidTab(container)
+    elseif group == "raid" then
+        self:CreateRaidTab(container)
     end
+end
+
+function RaidMail:CreateRaidTab(container)
+    local inlineGroup = AceGUI:Create("InlineGroup")
+    inlineGroup:SetLayout("Flow")
+    inlineGroup:SetFullWidth(true)
+    container:AddChild(inlineGroup)
+
+    local saveRaidButton = AceGUI:Create("Button")
+    saveRaidButton:SetText("Сохранить рейд")
+    saveRaidButton:SetWidth(200)
+    saveRaidButton:SetCallback("OnClick", function()
+        self:SaveRaid()
+    end)
+    inlineGroup:AddChild(saveRaidButton)
 end
 
 -- Sanding mail tab content
