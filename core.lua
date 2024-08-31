@@ -158,6 +158,17 @@ function RaidMail:CreateRaidTab(container)
     inlineGroup:AddChild(raidNameEditBox)
     self.raidNameEditBox = raidNameEditBox
 
+    -- Выпадающий список с сохраненными рейдами
+    local raidDropdown = AceGUI:Create("Dropdown")
+    raidDropdown:SetLabel("Выберите рейд:")
+    raidDropdown:SetFullWidth(true)
+    raidDropdown:SetList(self:GetRaidNames()) -- Заполняем список названиями рейдов
+    raidDropdown:SetCallback("OnValueChanged", function(widget, event, key)
+        self:OnRaidSelected(key)
+    end)
+    inlineGroup:AddChild(raidDropdown)
+    self.raidDropdown = raidDropdown
+
     local saveRaidButton = AceGUI:Create("Button")
     saveRaidButton:SetText("Сохранить рейд")
     saveRaidButton:SetWidth(200)
@@ -165,6 +176,93 @@ function RaidMail:CreateRaidTab(container)
         self:SaveRaid()
     end)
     inlineGroup:AddChild(saveRaidButton)
+
+    -- Группа для отображения информации о рейде (таблица)
+    local raidInfoGroup = AceGUI:Create("InlineGroup")
+    raidInfoGroup:SetTitle("Информация о рейде")
+    raidInfoGroup:SetFullWidth(true)
+    raidInfoGroup:SetLayout("List")
+    container:AddChild(raidInfoGroup)
+    self.raidInfoGroup = raidInfoGroup
+end
+
+-- Получаем список названий рейдов для выпадающего списка
+function RaidMail:GetRaidNames()
+    local raidNames = {}
+    for i, raid in ipairs(self.db.profile.Raids or {}) do
+        raidNames[i] = raid.raid_name
+    end
+    return raidNames
+end
+
+-- Обработка выбора рейда из выпадающего списка
+function RaidMail:OnRaidSelected(index)
+    local selectedRaid = self.db.profile.Raids[index]
+    if selectedRaid then
+        print("Выбран рейд: " .. selectedRaid.raid_name)
+        -- Выводим информацию о рейде или делаем другие действия
+        self:DisplayRaidInfo(selectedRaid)
+    end
+end
+
+-- Функция отображения информации о рейде в виде таблицы
+function RaidMail:DisplayRaidInfo(raid)
+    -- Очищаем предыдущую информацию
+    self.raidInfoGroup:ReleaseChildren()
+
+    -- Заголовки таблицы
+    local headerGroup = AceGUI:Create("SimpleGroup")
+    headerGroup:SetLayout("Flow")
+    headerGroup:SetFullWidth(true)
+    self.raidInfoGroup:AddChild(headerGroup)
+
+    local nameHeader = AceGUI:Create("Label")
+    nameHeader:SetText("Имя")
+    nameHeader:SetWidth(150)
+    headerGroup:AddChild(nameHeader)
+
+    local groupHeader = AceGUI:Create("Label")
+    groupHeader:SetText("Группа")
+    groupHeader:SetWidth(50)
+    headerGroup:AddChild(groupHeader)
+
+    local classHeader = AceGUI:Create("Label")
+    classHeader:SetText("Класс")
+    classHeader:SetWidth(150)
+    headerGroup:AddChild(classHeader)
+
+    local percentHeader = AceGUI:Create("Label")
+    percentHeader:SetText("% Кэша")
+    percentHeader:SetWidth(50)
+    headerGroup:AddChild(percentHeader)
+
+    -- Заполняем таблицу данными рейда
+    for _, raider in ipairs(raid.raiders) do
+        local rowGroup = AceGUI:Create("SimpleGroup")
+        rowGroup:SetLayout("Flow")
+        rowGroup:SetFullWidth(true)
+        self.raidInfoGroup:AddChild(rowGroup)
+
+        local nameLabel = AceGUI:Create("Label")
+        nameLabel:SetText(raider.name)
+        nameLabel:SetWidth(150)
+        rowGroup:AddChild(nameLabel)
+
+        local groupLabel = AceGUI:Create("Label")
+        groupLabel:SetText(tostring(raider.group))
+        groupLabel:SetWidth(50)
+        rowGroup:AddChild(groupLabel)
+
+        local classLabel = AceGUI:Create("Label")
+        classLabel:SetText(raider.class)
+        classLabel:SetWidth(150)
+        rowGroup:AddChild(classLabel)
+
+        local percentLabel = AceGUI:Create("Label")
+        percentLabel:SetText(tostring(raider.cashPercent))
+        percentLabel:SetWidth(50)
+        rowGroup:AddChild(percentLabel)
+    end
 end
 
 -- Sanding mail tab content
