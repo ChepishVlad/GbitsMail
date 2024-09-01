@@ -88,6 +88,9 @@ function GBitsRaidManager:SaveRaid()
         -- Сообщение об успешном сохранении
         print("Рейд успешно сохранен.")
 
+        -- Обновляем списки в дропдаунах
+        self:UpdateRaidDropdowns()
+
         -- Выводим имена рейдеров (опционально)
         for _, raider in ipairs(raiders) do
             print(string.format("Рейдер: %s, Группа: %d, Класс: %s", raider.name, raider.group, raider.class))
@@ -95,6 +98,14 @@ function GBitsRaidManager:SaveRaid()
     else
         print("Не удалось сохранить рейд. Вы не в рейде.")
     end
+end
+
+-- Функция для обновления списков в дропдаунах
+function GBitsRaidManager:UpdateRaidDropdowns()
+    local raidNames = self:GetRaidNames()
+    self.raidDropdown:SetList(raidNames)
+    self.updateRaidDropdown:SetList(raidNames)
+    self.deleteRaidDropdown:SetList(raidNames)
 end
 
 -- Получаем список названий рейдов для выпадающего списка
@@ -111,7 +122,6 @@ function GBitsRaidManager:OnRaidSelected(index)
     local selectedRaid = self.db.profile.Raids[index]
     if selectedRaid then
         print("Выбран рейд: " .. selectedRaid.raid_name)
-        -- Выводим информацию о рейде или делаем другие действия
         self:DisplayRaidInfo(selectedRaid)
     end
 end
@@ -196,7 +206,6 @@ function GBitsRaidManager:DisplayRaidInfo(raid)
     end
 end
 
-
 -- Main frame
 function GBitsRaidManager:CreateMainFrame()
     local frame = AceGUI:Create("Frame")
@@ -212,48 +221,38 @@ function GBitsRaidManager:CreateMainFrame()
     local tabGroup = AceGUI:Create("TabGroup")
     tabGroup:SetTabs({
         {text = "Raids", value = "raids"},
-        --{text = "Raid Manager", value = "raidmanager"}
+        {text = "Raid Manager", value = "raidmanager"}
     })
     tabGroup:SetCallback("OnGroupSelected", function(widget, event, group)
         self:SelectGroup(widget, group)
     end)
     tabGroup:SelectTab("raids")
     frame:AddChild(tabGroup)
-    --self.tabGroup = tabGroup
 end
 
 function GBitsRaidManager:SelectGroup(container, group)
     container:ReleaseChildren()
     if group == "raids" then
         self:CreateRaidsTab(container)
-    --elseif group == "raidmanager" then
-    --    self:CreateRaidManagerTab(widget)
+    elseif group == "raidmanager" then
+        self:CreateRaidManagerTab(container)
     end
 end
 
 -- Вкладка "Raids"
 function GBitsRaidManager:CreateRaidsTab(container)
-    local inlineGroup = AceGUI:Create("InlineGroup")
-    inlineGroup:SetLayout("Flow")
-    inlineGroup:SetFullWidth(true)
-    container:AddChild(inlineGroup)
+    -- Блок "Добавление рейда"
+    local addRaidGroup = AceGUI:Create("InlineGroup")
+    addRaidGroup:SetTitle("Добавление рейда")
+    addRaidGroup:SetLayout("Flow")
+    addRaidGroup:SetFullWidth(true)
+    container:AddChild(addRaidGroup)
 
     local raidNameEditBox = AceGUI:Create("EditBox")
     raidNameEditBox:SetLabel("Название рейда:")
     raidNameEditBox:SetFullWidth(true)
-    inlineGroup:AddChild(raidNameEditBox)
+    addRaidGroup:AddChild(raidNameEditBox)
     self.raidNameEditBox = raidNameEditBox
-
-    -- Выпадающий список с сохраненными рейдами
-    local raidDropdown = AceGUI:Create("Dropdown")
-    raidDropdown:SetLabel("Выберите рейд:")
-    raidDropdown:SetFullWidth(true)
-    raidDropdown:SetList(self:GetRaidNames()) -- Заполняем список названиями рейдов
-    raidDropdown:SetCallback("OnValueChanged", function(widget, event, key)
-        self:OnRaidSelected(key)
-    end)
-    inlineGroup:AddChild(raidDropdown)
-    self.raidDropdown = raidDropdown
 
     local saveRaidButton = AceGUI:Create("Button")
     saveRaidButton:SetText("Сохранить рейд")
@@ -261,7 +260,76 @@ function GBitsRaidManager:CreateRaidsTab(container)
     saveRaidButton:SetCallback("OnClick", function()
         self:SaveRaid()
     end)
-    inlineGroup:AddChild(saveRaidButton)
+    addRaidGroup:AddChild(saveRaidButton)
+
+    -- Блок "Обновление рейда"
+    local updateRaidGroup = AceGUI:Create("InlineGroup")
+    updateRaidGroup:SetTitle("Обновление рейда")
+    updateRaidGroup:SetLayout("Flow")
+    updateRaidGroup:SetFullWidth(true)
+    container:AddChild(updateRaidGroup)
+
+    local updateRaidDropdown = AceGUI:Create("Dropdown")
+    updateRaidDropdown:SetLabel("Выберите рейд для обновления:")
+    updateRaidDropdown:SetFullWidth(true)
+    updateRaidDropdown:SetList(self:GetRaidNames())
+    updateRaidDropdown:SetCallback("OnValueChanged", function(widget, event, key)
+        -- Пока ничего не делаем, в будущем добавим логику
+    end)
+    updateRaidGroup:AddChild(updateRaidDropdown)
+    self.updateRaidDropdown = updateRaidDropdown
+
+    local updateRaidButton = AceGUI:Create("Button")
+    updateRaidButton:SetText("Обновить рейд")
+    updateRaidButton:SetWidth(200)
+    updateRaidButton:SetCallback("OnClick", function()
+        -- Логика обновления рейда будет добавлена позже
+    end)
+    updateRaidGroup:AddChild(updateRaidButton)
+
+    -- Блок "Удаление рейда"
+    local deleteRaidGroup = AceGUI:Create("InlineGroup")
+    deleteRaidGroup:SetTitle("Удаление рейда")
+    deleteRaidGroup:SetLayout("Flow")
+    deleteRaidGroup:SetFullWidth(true)
+    container:AddChild(deleteRaidGroup)
+
+    local deleteRaidDropdown = AceGUI:Create("Dropdown")
+    deleteRaidDropdown:SetLabel("Выберите рейд для удаления:")
+    deleteRaidDropdown:SetFullWidth(true)
+    deleteRaidDropdown:SetList(self:GetRaidNames())
+    deleteRaidDropdown:SetCallback("OnValueChanged", function(widget, event, key)
+        -- Пока ничего не делаем, в будущем добавим логику
+    end)
+    deleteRaidGroup:AddChild(deleteRaidDropdown)
+    self.deleteRaidDropdown = deleteRaidDropdown
+
+    local deleteRaidButton = AceGUI:Create("Button")
+    deleteRaidButton:SetText("Удалить рейд")
+    deleteRaidButton:SetWidth(200)
+    deleteRaidButton:SetCallback("OnClick", function()
+        -- Логика удаления рейда будет добавлена позже
+    end)
+    deleteRaidGroup:AddChild(deleteRaidButton)
+end
+
+-- Вкладка "Raid Manager"
+function GBitsRaidManager:CreateRaidManagerTab(container)
+    local inlineGroup = AceGUI:Create("InlineGroup")
+    inlineGroup:SetLayout("Flow")
+    inlineGroup:SetFullWidth(true)
+    container:AddChild(inlineGroup)
+
+    -- Выпадающий список с сохраненными рейдами
+    local raidDropdown = AceGUI:Create("Dropdown")
+    raidDropdown:SetLabel("Выберите рейд для отображения:")
+    raidDropdown:SetFullWidth(true)
+    raidDropdown:SetList(self:GetRaidNames())
+    raidDropdown:SetCallback("OnValueChanged", function(widget, event, key)
+        self:DisplayRaidInfo(self.db.profile.Raids[key])
+    end)
+    inlineGroup:AddChild(raidDropdown)
+    self.raidDropdown = raidDropdown
 
     -- Группа для отображения информации о рейде (таблица)
     local raidInfoGroup = AceGUI:Create("InlineGroup")
@@ -270,11 +338,6 @@ function GBitsRaidManager:CreateRaidsTab(container)
     raidInfoGroup:SetLayout("List")
     container:AddChild(raidInfoGroup)
     self.raidInfoGroup = raidInfoGroup
-end
-
--- Вкладка "Raid Manager"
-function GBitsRaidManager:CreateRaidManagerTab(container)
-
 end
 
 function GBitsRaidManager:ShowFrame()
