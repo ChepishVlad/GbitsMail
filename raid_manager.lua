@@ -40,6 +40,7 @@ local CLASS_COLORS = {
     ["Жрица"] = { r = 1.00, g = 1.00, b = 1.00 },
     ["Рыцарь смерти"] = { r = 0.77, g = 0.12, b = 0.23 },
     ["Шаман"] = { r = 0.00, g = 0.44, b = 0.87 },
+    ["Шаманка"] = { r = 0.00, g = 0.44, b = 0.87 },
     ["Маг"] = { r = 0.41, g = 0.80, b = 0.94 },
     ["Чернокнижник"] = { r = 0.58, g = 0.51, b = 0.79 },
     ["Чернокнижница"] = { r = 0.58, g = 0.51, b = 0.79 },
@@ -83,6 +84,15 @@ end
 -- Функция для сохранения рейда
 function GBitsRaidManager:SaveRaid()
     local raidName = self.raidNameEditBox:GetText()
+
+    -- Проверяем, существует ли уже рейд с таким именем
+    for _, raid in ipairs(self.db.profile.Raids) do
+        if raid.raid_name == raidName then
+            self.errorLabel:SetText("Рейд с таким названием уже существует.")
+            return
+        end
+    end
+
     local raiders, errorMsg = GetRaidersList()
 
     if raiders then
