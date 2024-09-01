@@ -6,6 +6,7 @@ local AceDB = LibStub("AceDB-3.0")
 
 local raids = {}
 
+
 function GBitsRaidManager:OnInitialize()
     self.db = AceDB:New("RaidMailDB", {
         profile = {
@@ -32,7 +33,7 @@ local CLASS_COLORS = {
     ["Воин"] = { r = 0.78, g = 0.61, b = 0.43 },
     ["Паладин"] = { r = 0.96, g = 0.55, b = 0.73 },
     ["Охотник"] = { r = 0.67, g = 0.83, b = 0.45 },
-    ["Охотнца"] = { r = 0.67, g = 0.83, b = 0.45 },
+    ["Охотница"] = { r = 0.67, g = 0.83, b = 0.45 },
     ["Разбойник"] = { r = 1.00, g = 0.96, b = 0.41 },
     ["Разбойница"] = { r = 1.00, g = 0.96, b = 0.41 },
     ["Жрец"] = { r = 1.00, g = 1.00, b = 1.00 },
@@ -73,6 +74,7 @@ local function GetRaidersList()
         end
     else
         print("Вы не в рейде.")
+        return nil, "Вы не в рейде."
     end
     return raiders
 end
@@ -81,24 +83,51 @@ end
 -- Функция для сохранения рейда
 function GBitsRaidManager:SaveRaid()
     local raidName = self.raidNameEditBox:GetText()
-    local raiders = GetRaidersList()
+    local raiders, errorMsg = GetRaidersList()
 
-    if #raiders > 0 then
-        table.insert(raids, {["raid_name"] = raidName, ["raiders"] = raiders})
-        -- Сообщение об успешном сохранении
-        print("Рейд успешно сохранен.")
+    if raiders then
+        if raidName and raidName ~= "" then
+            table.insert(raids, {["raid_name"] = raidName, ["raiders"] = raiders})
+            self.errorLabel:SetText("") -- Очищаем сообщение об ошибке
 
-        -- Обновляем списки в дропдаунах
-        self:UpdateRaidDropdowns()
+            -- Сообщение об успешном сохранении
+            print("Рейд успешно сохранен.")
 
-        -- Выводим имена рейдеров (опционально)
-        for _, raider in ipairs(raiders) do
-            print(string.format("Рейдер: %s, Группа: %d, Класс: %s", raider.name, raider.group, raider.class))
+            -- Обновляем списки в дропдаунах
+            self:UpdateRaidDropdowns()
+
+            -- Выводим имена рейдеров (опционально)
+            for _, raider in ipairs(raiders) do
+                print(string.format("Рейдер: %s, Группа: %d, Класс: %s", raider.name, raider.group, raider.class))
+            end
+        else
+            self.errorLabel:SetText("Введите название рейда.")
         end
     else
-        print("Не удалось сохранить рейд. Вы не в рейде.")
+        self.errorLabel:SetText(errorMsg)
     end
 end
+
+-- Функция для удаления рейда
+function GBitsRaidManager:DeleteRaid()
+    local selectedRaidIndex = self.selectedRaidToDelete
+
+    if not selectedRaidIndex then
+        self.errorLabel:SetText("Не выбран рейд для удаления.")
+        return
+    end
+
+    -- Удаляем рейд
+    table.remove(self.db.profile.Raids, selectedRaidIndex)
+    self:UpdateRaidDropdowns()
+
+    -- Очищаем сообщение об ошибке
+    self.errorLabel:SetText("")
+
+    -- Сообщение об успешном удалении
+    print("Рейд успешно удален.")
+end
+
 
 -- Функция для обновления списков в дропдаунах
 function GBitsRaidManager:UpdateRaidDropdowns()
@@ -299,7 +328,7 @@ function GBitsRaidManager:CreateRaidsTab(container)
     deleteRaidDropdown:SetFullWidth(true)
     deleteRaidDropdown:SetList(self:GetRaidNames())
     deleteRaidDropdown:SetCallback("OnValueChanged", function(widget, event, key)
-        -- Пока ничего не делаем, в будущем добавим логику
+        self.selectedRaidToDelete = key
     end)
     deleteRaidGroup:AddChild(deleteRaidDropdown)
     self.deleteRaidDropdown = deleteRaidDropdown
@@ -308,9 +337,17 @@ function GBitsRaidManager:CreateRaidsTab(container)
     deleteRaidButton:SetText("Удалить рейд")
     deleteRaidButton:SetWidth(200)
     deleteRaidButton:SetCallback("OnClick", function()
-        -- Логика удаления рейда будет добавлена позже
+        self:DeleteRaid()
     end)
     deleteRaidGroup:AddChild(deleteRaidButton)
+
+    -- Блок для сообщений об ошибках
+    local errorLabel = AceGUI:Create("Label")
+    errorLabel:SetText("")
+    errorLabel:SetColor(1, 0, 0) -- Красный цвет для сообщений об ошибках
+    errorLabel:SetFullWidth(true)
+    container:AddChild(errorLabel)
+    self.errorLabel = errorLabel
 end
 
 -- Вкладка "Raid Manager"
