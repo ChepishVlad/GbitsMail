@@ -17,6 +17,43 @@ function GBitsRaidManager:OnInitialize()
     self:RegisterChatCommand("raidmanager", "ShowFrame")
 end
 
+-- Переделать позже по людски
+local CLASS_COLORS = {
+    ["WARRIOR"] = { r = 0.78, g = 0.61, b = 0.43 },
+    ["PALADIN"] = { r = 0.96, g = 0.55, b = 0.73 },
+    ["HUNTER"] = { r = 0.67, g = 0.83, b = 0.45 },
+    ["ROGUE"] = { r = 1.00, g = 0.96, b = 0.41 },
+    ["PRIEST"] = { r = 1.00, g = 1.00, b = 1.00 },
+    ["DEATHKNIGHT"] = { r = 0.77, g = 0.12, b = 0.23 },
+    ["SHAMAN"] = { r = 0.00, g = 0.44, b = 0.87 },
+    ["MAGE"] = { r = 0.41, g = 0.80, b = 0.94 },
+    ["WARLOCK"] = { r = 0.58, g = 0.51, b = 0.79 },
+    ["DRUID"] = { r = 1.00, g = 0.49, b = 0.04 },
+    ["Воин"] = { r = 0.78, g = 0.61, b = 0.43 },
+    ["Паладин"] = { r = 0.96, g = 0.55, b = 0.73 },
+    ["Охотник"] = { r = 0.67, g = 0.83, b = 0.45 },
+    ["Охотнца"] = { r = 0.67, g = 0.83, b = 0.45 },
+    ["Разбойник"] = { r = 1.00, g = 0.96, b = 0.41 },
+    ["Разбойница"] = { r = 1.00, g = 0.96, b = 0.41 },
+    ["Жрец"] = { r = 1.00, g = 1.00, b = 1.00 },
+    ["Жрица"] = { r = 1.00, g = 1.00, b = 1.00 },
+    ["Рыцарь смерти"] = { r = 0.77, g = 0.12, b = 0.23 },
+    ["Шаман"] = { r = 0.00, g = 0.44, b = 0.87 },
+    ["Маг"] = { r = 0.41, g = 0.80, b = 0.94 },
+    ["Чернокнижник"] = { r = 0.58, g = 0.51, b = 0.79 },
+    ["Чернокнижница"] = { r = 0.58, g = 0.51, b = 0.79 },
+    ["Друид"] = { r = 1.00, g = 0.49, b = 0.04 },
+}
+
+local function GetColoredText(class, text)
+    local color = CLASS_COLORS[class]
+    if color then
+        return string.format("|cff%02x%02x%02x%s|r", color.r * 255, color.g * 255, color.b * 255, text)
+    else
+        return text  -- Если класс не найден, возвращаем обычный текст
+    end
+end
+
 local function GetRaidersList()
     local raiders = {}
     if IsInRaid() then
@@ -128,7 +165,7 @@ function GBitsRaidManager:DisplayRaidInfo(raid)
         self.raidInfoGroup:AddChild(rowGroup)
 
         local nameLabel = AceGUI:Create("Label")
-        nameLabel:SetText(raider.name)
+        nameLabel:SetText(GetColoredText(raider.class, raider.name))
         nameLabel:SetWidth(150)
         rowGroup:AddChild(nameLabel)
 
@@ -138,7 +175,7 @@ function GBitsRaidManager:DisplayRaidInfo(raid)
         rowGroup:AddChild(groupLabel)
 
         local classLabel = AceGUI:Create("Label")
-        classLabel:SetText(raider.class)
+        classLabel:SetText(GetColoredText(raider.class, raider.class))
         classLabel:SetWidth(150)
         rowGroup:AddChild(classLabel)
 
