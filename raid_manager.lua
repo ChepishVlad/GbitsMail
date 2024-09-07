@@ -170,11 +170,24 @@ function GBitsRaidManager:DisplayRaidInfo(raid)
     -- Очищаем предыдущую информацию
     self.raidInfoGroup:ReleaseChildren()
 
+    -- Создаем контейнер с прокруткой
+    local scrollContainer = AceGUI:Create("SimpleGroup")
+    scrollContainer:SetFullWidth(true)
+    scrollContainer:SetHeight(320)
+    --scrollContainer:SetFullHeight(true)
+    scrollContainer:SetLayout("Fill")  -- "Fill" позволяет контейнеру занять всё доступное пространство
+    self.raidInfoGroup:AddChild(scrollContainer)
+
+    -- Создаем ScrollFrame для вертикальной прокрутки
+    local scrollFrame = AceGUI:Create("ScrollFrame")
+    scrollFrame:SetLayout("Flow")  -- Используем "Flow" для расположения элементов по вертикали
+    scrollContainer:AddChild(scrollFrame)
+
     -- Заголовки таблицы
     local headerGroup = AceGUI:Create("SimpleGroup")
     headerGroup:SetLayout("Flow")
     headerGroup:SetFullWidth(true)
-    self.raidInfoGroup:AddChild(headerGroup)
+    scrollFrame:AddChild(headerGroup)
 
     -- Заголовок для столбца "№"
     local indexHeader = AceGUI:Create("Label")
@@ -198,13 +211,13 @@ function GBitsRaidManager:DisplayRaidInfo(raid)
     headerGroup:AddChild(classHeader)
 
     local bonusHeader = AceGUI:Create("Label")
-    bonusHeader:SetText("Bouns")
-    bonusHeader:SetWidth("50")
+    bonusHeader:SetText("Bonus")
+    bonusHeader:SetWidth(50)
     headerGroup:AddChild(bonusHeader)
 
     local penaltyHeader = AceGUI:Create("Label")
     penaltyHeader:SetText("Penalty")
-    penaltyHeader:SetWidth("50")
+    penaltyHeader:SetWidth(50)
     headerGroup:AddChild(penaltyHeader)
 
     local percentHeader = AceGUI:Create("Label")
@@ -217,7 +230,7 @@ function GBitsRaidManager:DisplayRaidInfo(raid)
         local rowGroup = AceGUI:Create("SimpleGroup")
         rowGroup:SetLayout("Flow")
         rowGroup:SetFullWidth(true)
-        self.raidInfoGroup:AddChild(rowGroup)
+        scrollFrame:AddChild(rowGroup)
 
         -- Порядковый номер строки
         local indexLabel = AceGUI:Create("Label")
@@ -256,6 +269,7 @@ function GBitsRaidManager:DisplayRaidInfo(raid)
         rowGroup:AddChild(percentLabel)
     end
 end
+
 
 -- Main frame
 function GBitsRaidManager:CreateMainFrame()
