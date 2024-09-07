@@ -176,6 +176,12 @@ function GBitsRaidManager:DisplayRaidInfo(raid)
     headerGroup:SetFullWidth(true)
     self.raidInfoGroup:AddChild(headerGroup)
 
+    -- Заголовок для столбца "№"
+    local indexHeader = AceGUI:Create("Label")
+    indexHeader:SetText("№")
+    indexHeader:SetWidth(30)
+    headerGroup:AddChild(indexHeader)
+
     local nameHeader = AceGUI:Create("Label")
     nameHeader:SetText("Name")
     nameHeader:SetWidth(150)
@@ -207,11 +213,17 @@ function GBitsRaidManager:DisplayRaidInfo(raid)
     headerGroup:AddChild(percentHeader)
 
     -- Заполняем таблицу данными рейда
-    for _, raider in ipairs(raid.raiders) do
+    for i, raider in ipairs(raid.raiders) do
         local rowGroup = AceGUI:Create("SimpleGroup")
         rowGroup:SetLayout("Flow")
         rowGroup:SetFullWidth(true)
         self.raidInfoGroup:AddChild(rowGroup)
+
+        -- Порядковый номер строки
+        local indexLabel = AceGUI:Create("Label")
+        indexLabel:SetText(tostring(i))  -- Используем индекс i как порядковый номер
+        indexLabel:SetWidth(30)
+        rowGroup:AddChild(indexLabel)
 
         local nameLabel = AceGUI:Create("Label")
         nameLabel:SetText(GetColoredText(raider.class, raider.name))
