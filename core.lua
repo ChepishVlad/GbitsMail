@@ -236,8 +236,8 @@ function RaidMail:ShowMailLogsPopup()
     popupFrame:SetTitle("Логи рассылки")
     popupFrame:SetStatusText("")
     popupFrame:SetLayout("Fill")
-    popupFrame:SetWidth(500)
-    popupFrame:SetHeight(400)
+    popupFrame:SetWidth(700)
+    popupFrame:SetHeight(700)
 
     -- Создаем MultiLineEditBox для логов
     local logsEditBox = AceGUI:Create("MultiLineEditBox")
