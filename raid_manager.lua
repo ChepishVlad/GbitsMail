@@ -225,6 +225,11 @@ function GBitsRaidManager:DisplayRaidInfo(raid)
     percentHeader:SetWidth(50)
     headerGroup:AddChild(percentHeader)
 
+    local editHeader = AceGUI:Create("Label")
+    editHeader:SetText("Edit")
+    editHeader:SetWidth(50)
+    headerGroup:AddChild(editHeader)
+
     -- Заполняем таблицу данными рейда
     for i, raider in ipairs(raid.raiders) do
         local rowGroup = AceGUI:Create("SimpleGroup")
@@ -267,6 +272,92 @@ function GBitsRaidManager:DisplayRaidInfo(raid)
         percentLabel:SetText(tostring(raider.cashPercent))
         percentLabel:SetWidth(50)
         rowGroup:AddChild(percentLabel)
+
+        -- Кнопка Edit
+        local editButton = AceGUI:Create("Button")
+        editButton:SetText("Edit")
+        editButton:SetWidth(100)
+        rowGroup:AddChild(editButton)
+
+        -- Обработчик нажатия кнопки "Edit"
+        editButton:SetCallback("OnClick", function()
+            self:OpenEditFrame(raider)
+        end)
+    end
+end
+
+-- Функция для открытия фрейма редактирования персонажа
+function GBitsRaidManager:OpenEditFrame(raider, raid)
+    -- Создаем фрейм редактирования
+    local editFrame = AceGUI:Create("Frame")
+    editFrame:SetTitle("Edit Raider: " .. raider.name)
+    editFrame:SetLayout("Flow")
+    editFrame:SetWidth(300)
+    editFrame:SetHeight(250)
+
+    -- Поле Name (не редактируемое)
+    local nameLabel = AceGUI:Create("Label")
+    nameLabel:SetText("Name: " .. raider.name)
+    nameLabel:SetWidth(200)
+    editFrame:AddChild(nameLabel)
+
+    -- Поле Group (не редактируемое)
+    local groupLabel = AceGUI:Create("Label")
+    groupLabel:SetText("Group: " .. tostring(raider.group))
+    groupLabel:SetWidth(200)
+    editFrame:AddChild(groupLabel)
+
+    -- Поле Class (не редактируемое)
+    local classLabel = AceGUI:Create("Label")
+    classLabel:SetText("Class: " .. raider.class)
+    classLabel:SetWidth(200)
+    editFrame:AddChild(classLabel)
+
+    -- Поле Bonus (редактируемое)
+    local bonusEdit = AceGUI:Create("EditBox")
+    bonusEdit:SetLabel("Bonus")
+    bonusEdit:SetText(tostring(raider.bonus))
+    bonusEdit:SetWidth(200)
+    editFrame:AddChild(bonusEdit)
+
+    -- Поле Penalty (редактируемое)
+    local penaltyEdit = AceGUI:Create("EditBox")
+    penaltyEdit:SetLabel("Penalty")
+    penaltyEdit:SetText(tostring(raider.penalty))
+    penaltyEdit:SetWidth(200)
+    editFrame:AddChild(penaltyEdit)
+
+    -- Кнопка сохранения
+    local saveButton = AceGUI:Create("Button")
+    saveButton:SetText("Save")
+    saveButton:SetWidth(200)
+    editFrame:AddChild(saveButton)
+
+    -- Обработчик сохранения
+    saveButton:SetCallback("OnClick", function()
+        -- Обновляем данные о бонусе и штрафе
+        raider.bonus = tonumber(bonusEdit:GetText()) or raider.bonus
+        raider.penalty = tonumber(penaltyEdit:GetText()) or raider.penalty
+
+        -- Закрыть фрейм редактирования после сохранения
+        editFrame:Hide()
+
+        -- Обновляем данные рейда в базе данных
+        self:UpdateRaidInDatabase(raid)
+
+        -- Обновить интерфейс после редактирования
+        GBitsRaidManager:DisplayRaidInfo(raid)
+    end)
+end
+
+-- Функция для обновления рейда в базе данных
+function GBitsRaidManager:UpdateRaidInDatabase(updatedRaid)
+    for i, raid in ipairs(self.db.profile.Raids) do
+        if raid.raid_name == updatedRaid.raid_name then
+            -- Заменяем старый рейд новым
+            self.db.profile.Raids[i] = updatedRaid
+            return
+        end
     end
 end
 
