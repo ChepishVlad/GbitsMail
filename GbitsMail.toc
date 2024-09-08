@@ -14,3 +14,4 @@ Libs\AceTimer-3.0\AceTimer-3.0.xml
 Libs\AceDB-3.0\AceDB-3.0.xml
 
 core.lua
+get_members.lua
