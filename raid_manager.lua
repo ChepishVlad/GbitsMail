@@ -98,7 +98,11 @@ function GBitsRaidManager:SaveRaid()
 
     if raiders then
         if raidName and raidName ~= "" then
-            table.insert(raids, {["raid_name"] = raidName, ["raiders"] = raiders})
+            table.insert(raids, {
+                ["raid_name"] = raidName,
+                ["raiders"] = raiders,
+                ["total_cash"] = 0
+            })
             self.errorLabel:SetText("") -- Очищаем сообщение об ошибке
 
             -- Сообщение об успешном сохранении
