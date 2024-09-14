@@ -69,7 +69,8 @@ local function GetRaidersList()
                     ["class"] = class,
                     ["cashPercent"] = 100,
                     ["bonus"] = 0,
-                    ["penalty"] = 0
+                    ["penalty"] = 0,
+                    ["cash"] = 0,
                 })
             end
         end
@@ -225,6 +226,11 @@ function GBitsRaidManager:DisplayRaidInfo(raid)
     percentHeader:SetWidth(50)
     headerGroup:AddChild(percentHeader)
 
+    local cashHeader = AceGUI:Create("Label")
+    cashHeader:SetText("Cash")
+    cashHeader:SetWidth(50)
+    headerGroup:AddChild(cashHeader)
+
     local editHeader = AceGUI:Create("Label")
     editHeader:SetText("Edit")
     editHeader:SetWidth(50)
@@ -272,6 +278,11 @@ function GBitsRaidManager:DisplayRaidInfo(raid)
         percentLabel:SetText(tostring(raider.cashPercent))
         percentLabel:SetWidth(50)
         rowGroup:AddChild(percentLabel)
+
+        local cashLabel = AceGUI:Create("Label")
+        cashLabel:SetText(tostring(raider.cash or 0))
+        cashLabel:SetWidth(50)
+        rowGroup:AddChild(cashLabel)
 
         -- Кнопка Edit
         local editButton = AceGUI:Create("Button")
@@ -338,6 +349,7 @@ function GBitsRaidManager:OpenEditFrame(raider, raid)
         -- Обновляем данные о бонусе и штрафе
         raider.bonus = tonumber(bonusEdit:GetText()) or raider.bonus
         raider.penalty = tonumber(penaltyEdit:GetText()) or raider.penalty
+        raider.cashPercent = 100 + raider.bonus - raider.penalty
 
         -- Закрыть фрейм редактирования после сохранения
         editFrame:Hide()
