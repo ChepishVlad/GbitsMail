@@ -460,6 +460,9 @@ function GBitsRaidManager:CreateMainFrame()
     frame:Hide()
     self.frame = frame
 
+    -- TODO сейчас тут вызывается исключение - не нашёл способа сделать без него
+    frame.frame:SetResizable(false)
+
     -- Создание табов
     local tabGroup = AceGUI:Create("TabGroup")
     tabGroup:SetTabs({
