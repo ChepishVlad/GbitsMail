@@ -70,6 +70,7 @@ local function GetRaidersList()
                     ["cashPercent"] = 100,
                     ["bonus"] = 0,
                     ["penalty"] = 0,
+                    ["base_cash"] = 0,
                     ["cash"] = 0,
                 })
             end
@@ -141,6 +142,31 @@ function GBitsRaidManager:DeleteRaid()
 
     -- Сообщение об успешном удалении
     print("Рейд успешно удален.")
+end
+
+function GBitsRaidManager:UpdateCash()
+    local selectedRaid = self.updateCashRaidDropdown:GetValue()
+    local inputCash = tonumber(self.raidCashBox:GetText())
+    print(inputCash)
+
+    if selectedRaid and inputCash then
+        local raid = self.db.profile.Raids[self.selectedCashRaid]
+        -- Обновляем данные рейда
+        raid.total_cash = inputCash
+
+        -- Рассчитываем сумму на участника и обновляем данные участников
+        local cashPerMember = math.floor(inputCash / 28)
+        for _, raider in pairs(raid.raiders) do
+            raider.base_cash = cashPerMember
+            raider.cash = math.floor(cashPerMember * ((100 - raider.penalty + raider.bonus) / 100))
+        end
+
+        self:UpdateRaidInDatabase(raid)
+        -- Выводим сообщение об успешном обновлении
+        print("Обновлено! Общая сумма рейда: " .. inputCash .. ", сумма на каждого участника: " .. cashPerMember)
+    else
+        print("Ошибка: Не выбран рейд или введена некорректная сумма")
+    end
 end
 
 
@@ -354,6 +380,7 @@ function GBitsRaidManager:OpenEditFrame(raider, raid)
         raider.bonus = tonumber(bonusEdit:GetText()) or raider.bonus
         raider.penalty = tonumber(penaltyEdit:GetText()) or raider.penalty
         raider.cashPercent = 100 + raider.bonus - raider.penalty
+        raider.cash = math.floor(raider.base_cash * (raider.cashPercent / 100))
 
         -- Закрыть фрейм редактирования после сохранения
         editFrame:Hide()
@@ -483,6 +510,39 @@ function GBitsRaidManager:CreateRaidsTab(container)
         self:DeleteRaid()
     end)
     deleteRaidGroup:AddChild(deleteRaidButton)
+
+
+    -- Блок "Cash Raid"
+    local updateCashRaidGroup = AceGUI:Create("InlineGroup")
+    updateCashRaidGroup:SetTitle("Raids Cash")
+    updateCashRaidGroup:SetLayout("Flow")
+    updateCashRaidGroup:SetFullWidth(true)
+    container:AddChild(updateCashRaidGroup)
+
+    local updateCashRaidDropdown = AceGUI:Create("Dropdown")
+    updateCashRaidDropdown:SetLabel("Выберите рейд для обновления суммы:")
+    --updateCashRaidDropdown:SetFullWidth(true)
+    updateCashRaidDropdown:SetList(self:GetRaidNames())
+    updateCashRaidDropdown:SetCallback("OnValueChanged", function(widget, event, key)
+        self.selectedCashRaid = key
+    end)
+    updateCashRaidGroup:AddChild(updateCashRaidDropdown)
+    self.updateCashRaidDropdown = updateCashRaidDropdown
+
+    local raidCashBox = AceGUI:Create("EditBox")
+    raidCashBox:SetLabel("Total Cash:")
+    --raidCashBox:SetFullWidth(true)
+    updateCashRaidGroup:AddChild(raidCashBox)
+    self.raidCashBox = raidCashBox
+
+    local updateCashRaidButton = AceGUI:Create("Button")
+    updateCashRaidButton:SetText("Обновить Cash")
+    updateCashRaidButton:SetWidth(200)
+    updateCashRaidButton:SetCallback("OnClick", function()
+        self:UpdateCash()
+    end)
+    updateCashRaidGroup:AddChild(updateCashRaidButton)
+
 
     -- Блок для сообщений об ошибках
     local errorLabel = AceGUI:Create("Label")
