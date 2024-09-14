@@ -517,7 +517,7 @@ function GBitsRaidManager:CreateRaidsTab(container)
     updateRaidDropdown:SetFullWidth(true)
     updateRaidDropdown:SetList(self:GetRaidNames())
     updateRaidDropdown:SetCallback("OnValueChanged", function(widget, event, key)
-        -- Пока ничего не делаем, в будущем добавим логику
+        print("Not implemented yet")
     end)
     updateRaidGroup:AddChild(updateRaidDropdown)
     self.updateRaidDropdown = updateRaidDropdown
@@ -526,9 +526,10 @@ function GBitsRaidManager:CreateRaidsTab(container)
     updateRaidButton:SetText("Обновить рейд")
     updateRaidButton:SetWidth(200)
     updateRaidButton:SetCallback("OnClick", function()
-        -- Логика обновления рейда будет добавлена позже
+        print("Not implemented yet")
     end)
     updateRaidGroup:AddChild(updateRaidButton)
+
 
     -- Блок "Удаление рейда"
     local deleteRaidGroup = AceGUI:Create("InlineGroup")
@@ -554,6 +555,7 @@ function GBitsRaidManager:CreateRaidsTab(container)
         self:DeleteRaid()
     end)
     deleteRaidGroup:AddChild(deleteRaidButton)
+
 
 
     -- Блок "Cash Raid"
