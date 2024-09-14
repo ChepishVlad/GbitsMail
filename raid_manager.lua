@@ -281,7 +281,7 @@ function GBitsRaidManager:DisplayRaidInfo(raid)
 
         -- Обработчик нажатия кнопки "Edit"
         editButton:SetCallback("OnClick", function()
-            self:OpenEditFrame(raider)
+            self:OpenEditFrame(raider, raid)
         end)
     end
 end
