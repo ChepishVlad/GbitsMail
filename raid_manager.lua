@@ -5,6 +5,8 @@ local AceGUI = LibStub("AceGUI-3.0")
 local AceDB = LibStub("AceDB-3.0")
 
 local raids = {}
+local sortColumn = "index"
+local sortAscending = true
 
 
 function GBitsRaidManager:OnInitialize()
@@ -54,6 +56,16 @@ local function GetColoredText(class, text)
     else
         return text  -- Если класс не найден, возвращаем обычный текст
     end
+end
+
+local function SortRaiders(raiders, column, ascending)
+    table.sort(raiders, function(a, b)
+        if ascending then
+            return a[column] < b[column]
+        else
+            return a[column] > b[column]
+        end
+    end)
 end
 
 local function GetRaidersList()
@@ -220,54 +232,86 @@ function GBitsRaidManager:DisplayRaidInfo(raid)
     headerGroup:SetFullWidth(true)
     scrollFrame:AddChild(headerGroup)
 
-    -- Заголовок для столбца "№"
-    local indexHeader = AceGUI:Create("Label")
-    indexHeader:SetText("№")
-    indexHeader:SetWidth(30)
-    headerGroup:AddChild(indexHeader)
+    -- Функция для добавления заголовков с сортировкой
+    local function AddHeader(labelText, column, width)
+        local header = AceGUI:Create("InteractiveLabel")
+        header:SetText(labelText)
+        header:SetWidth(width)
+        header:SetCallback("OnClick", function()
+            -- При нажатии меняем направление сортировки и сортируем данные
+            if sortColumn == column then
+                sortAscending = not sortAscending
+            else
+                sortColumn = column
+                sortAscending = true
+            end
+            SortRaiders(raid.raiders, column, sortAscending)
+            self:DisplayRaidInfo(raid) -- Перерисовываем таблицу с отсортированными данными
+        end)
+        headerGroup:AddChild(header)
+    end
 
-    local nameHeader = AceGUI:Create("Label")
-    nameHeader:SetText("Name")
-    nameHeader:SetWidth(150)
-    headerGroup:AddChild(nameHeader)
+    -- Добавляем заголовки
+    AddHeader("№", "index", 30)
+    AddHeader("Name", "name", 150)
+    AddHeader("Group", "group", 50)
+    AddHeader("Class", "class", 150)
+    AddHeader("Bonus", "bonus", 50)
+    AddHeader("Penalty", "penalty", 50)
+    AddHeader("Cash %", "cashPercent", 50)
+    AddHeader("Cash", "cash", 50)
 
-    local groupHeader = AceGUI:Create("Label")
-    groupHeader:SetText("Group")
-    groupHeader:SetWidth(50)
-    headerGroup:AddChild(groupHeader)
-
-    local classHeader = AceGUI:Create("Label")
-    classHeader:SetText("Class")
-    classHeader:SetWidth(150)
-    headerGroup:AddChild(classHeader)
-
-    local bonusHeader = AceGUI:Create("Label")
-    bonusHeader:SetText("Bonus")
-    bonusHeader:SetWidth(50)
-    headerGroup:AddChild(bonusHeader)
-
-    local penaltyHeader = AceGUI:Create("Label")
-    penaltyHeader:SetText("Penalty")
-    penaltyHeader:SetWidth(50)
-    headerGroup:AddChild(penaltyHeader)
-
-    local percentHeader = AceGUI:Create("Label")
-    percentHeader:SetText("Cash %")
-    percentHeader:SetWidth(50)
-    headerGroup:AddChild(percentHeader)
-
-    local cashHeader = AceGUI:Create("Label")
-    cashHeader:SetText("Cash")
-    cashHeader:SetWidth(50)
-    headerGroup:AddChild(cashHeader)
-
-    local editHeader = AceGUI:Create("Label")
-    editHeader:SetText("Edit")
-    editHeader:SetWidth(50)
-    headerGroup:AddChild(editHeader)
+    ---- Заголовок для столбца "№"
+    --local indexHeader = AceGUI:Create("Label")
+    --indexHeader:SetText("№")
+    --indexHeader:SetWidth(30)
+    --headerGroup:AddChild(indexHeader)
+    --
+    --local nameHeader = AceGUI:Create("Label")
+    --nameHeader:SetText("Name")
+    --nameHeader:SetWidth(150)
+    --headerGroup:AddChild(nameHeader)
+    --
+    --local groupHeader = AceGUI:Create("Label")
+    --groupHeader:SetText("Group")
+    --groupHeader:SetWidth(50)
+    --headerGroup:AddChild(groupHeader)
+    --
+    --local classHeader = AceGUI:Create("Label")
+    --classHeader:SetText("Class")
+    --classHeader:SetWidth(150)
+    --headerGroup:AddChild(classHeader)
+    --
+    --local bonusHeader = AceGUI:Create("Label")
+    --bonusHeader:SetText("Bonus")
+    --bonusHeader:SetWidth(50)
+    --headerGroup:AddChild(bonusHeader)
+    --
+    --local penaltyHeader = AceGUI:Create("Label")
+    --penaltyHeader:SetText("Penalty")
+    --penaltyHeader:SetWidth(50)
+    --headerGroup:AddChild(penaltyHeader)
+    --
+    --local percentHeader = AceGUI:Create("Label")
+    --percentHeader:SetText("Cash %")
+    --percentHeader:SetWidth(50)
+    --headerGroup:AddChild(percentHeader)
+    --
+    --local cashHeader = AceGUI:Create("Label")
+    --cashHeader:SetText("Cash")
+    --cashHeader:SetWidth(50)
+    --headerGroup:AddChild(cashHeader)
+    --
+    --local editHeader = AceGUI:Create("Label")
+    --editHeader:SetText("Edit")
+    --editHeader:SetWidth(50)
+    --headerGroup:AddChild(editHeader)
 
     -- Заполняем таблицу данными рейда
     for i, raider in ipairs(raid.raiders) do
+        -- Дополняем данные для сортировки по "index"
+        raider.index = i
+
         local rowGroup = AceGUI:Create("SimpleGroup")
         rowGroup:SetLayout("Flow")
         rowGroup:SetFullWidth(true)
