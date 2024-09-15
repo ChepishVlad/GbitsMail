@@ -20,54 +20,6 @@ function GBitsRaidManager:OnInitialize()
     self:RegisterChatCommand("raidmanager", "ShowFrame")
 end
 
--- Переделать позже по людски
-local CLASS_COLORS = {
-    ["WARRIOR"] = { r = 0.78, g = 0.61, b = 0.43 },
-    ["PALADIN"] = { r = 0.96, g = 0.55, b = 0.73 },
-    ["HUNTER"] = { r = 0.67, g = 0.83, b = 0.45 },
-    ["ROGUE"] = { r = 1.00, g = 0.96, b = 0.41 },
-    ["PRIEST"] = { r = 1.00, g = 1.00, b = 1.00 },
-    ["DEATHKNIGHT"] = { r = 0.77, g = 0.12, b = 0.23 },
-    ["SHAMAN"] = { r = 0.00, g = 0.44, b = 0.87 },
-    ["MAGE"] = { r = 0.41, g = 0.80, b = 0.94 },
-    ["WARLOCK"] = { r = 0.58, g = 0.51, b = 0.79 },
-    ["DRUID"] = { r = 1.00, g = 0.49, b = 0.04 },
-    ["Воин"] = { r = 0.78, g = 0.61, b = 0.43 },
-    ["Паладин"] = { r = 0.96, g = 0.55, b = 0.73 },
-    ["Охотник"] = { r = 0.67, g = 0.83, b = 0.45 },
-    ["Охотница"] = { r = 0.67, g = 0.83, b = 0.45 },
-    ["Разбойник"] = { r = 1.00, g = 0.96, b = 0.41 },
-    ["Разбойница"] = { r = 1.00, g = 0.96, b = 0.41 },
-    ["Жрец"] = { r = 1.00, g = 1.00, b = 1.00 },
-    ["Жрица"] = { r = 1.00, g = 1.00, b = 1.00 },
-    ["Рыцарь смерти"] = { r = 0.77, g = 0.12, b = 0.23 },
-    ["Шаман"] = { r = 0.00, g = 0.44, b = 0.87 },
-    ["Шаманка"] = { r = 0.00, g = 0.44, b = 0.87 },
-    ["Маг"] = { r = 0.41, g = 0.80, b = 0.94 },
-    ["Чернокнижник"] = { r = 0.58, g = 0.51, b = 0.79 },
-    ["Чернокнижница"] = { r = 0.58, g = 0.51, b = 0.79 },
-    ["Друид"] = { r = 1.00, g = 0.49, b = 0.04 },
-}
-
-local function GetColoredText(class, text)
-    local color = CLASS_COLORS[class]
-    if color then
-        return string.format("|cff%02x%02x%02x%s|r", color.r * 255, color.g * 255, color.b * 255, text)
-    else
-        return text  -- Если класс не найден, возвращаем обычный текст
-    end
-end
-
-local function SortRaiders(raiders, column, ascending)
-    table.sort(raiders, function(a, b)
-        if ascending then
-            return a[column] < b[column]
-        else
-            return a[column] > b[column]
-        end
-    end)
-end
-
 local function GetRaidersList()
     local raiders = {}
     if IsInRaid() then
@@ -185,19 +137,10 @@ end
 
 -- Функция для обновления списков в дропдаунах
 function GBitsRaidManager:UpdateRaidDropdowns()
-    local raidNames = self:GetRaidNames()
+    local raidNames = addonTable:GetRaidNames(self.db.profile.Raids or {})
     self.raidDropdown:SetList(raidNames)
     self.updateRaidDropdown:SetList(raidNames)
     self.deleteRaidDropdown:SetList(raidNames)
-end
-
--- Получаем список названий рейдов для выпадающего списка
-function GBitsRaidManager:GetRaidNames()
-    local raidNames = {}
-    for i, raid in ipairs(self.db.profile.Raids or {}) do
-        raidNames[i] = raid.raid_name
-    end
-    return raidNames
 end
 
 -- Обработка выбора рейда из выпадающего списка
@@ -246,7 +189,7 @@ function GBitsRaidManager:DisplayRaidInfo(raid)
                 sortColumn = column
                 sortAscending = true
             end
-            SortRaiders(raid.raiders, column, sortAscending)
+            addonTable:SortRaiders(raid.raiders, column, sortAscending)
             self:DisplayRaidInfo(raid) -- Перерисовываем таблицу с отсортированными данными
         end)
         headerGroup:AddChild(header)
@@ -279,7 +222,7 @@ function GBitsRaidManager:DisplayRaidInfo(raid)
         rowGroup:AddChild(indexLabel)
 
         local nameLabel = AceGUI:Create("Label")
-        nameLabel:SetText(GetColoredText(raider.class, raider.name))
+        nameLabel:SetText(addonTable:GetColoredText(raider.class, raider.name))
         nameLabel:SetWidth(150)
         rowGroup:AddChild(nameLabel)
 
@@ -289,7 +232,7 @@ function GBitsRaidManager:DisplayRaidInfo(raid)
         rowGroup:AddChild(groupLabel)
 
         local classLabel = AceGUI:Create("Label")
-        classLabel:SetText(GetColoredText(raider.class, raider.class))
+        classLabel:SetText(addonTable:GetColoredText(raider.class, raider.class))
         classLabel:SetWidth(150)
         rowGroup:AddChild(classLabel)
 
@@ -473,7 +416,7 @@ function GBitsRaidManager:CreateRaidsTab(container)
     local updateRaidDropdown = AceGUI:Create("Dropdown")
     updateRaidDropdown:SetLabel("Выберите рейд для обновления:")
     updateRaidDropdown:SetFullWidth(true)
-    updateRaidDropdown:SetList(self:GetRaidNames())
+    updateRaidDropdown:SetList(addonTable:GetRaidNames(self.db.profile.Raids or {}))
     updateRaidDropdown:SetCallback("OnValueChanged", function(widget, event, key)
         print("Not implemented yet")
     end)
@@ -499,7 +442,7 @@ function GBitsRaidManager:CreateRaidsTab(container)
     local deleteRaidDropdown = AceGUI:Create("Dropdown")
     deleteRaidDropdown:SetLabel("Выберите рейд для удаления:")
     deleteRaidDropdown:SetFullWidth(true)
-    deleteRaidDropdown:SetList(self:GetRaidNames())
+    deleteRaidDropdown:SetList(addonTable:GetRaidNames(self.db.profile.Raids or {}))
     deleteRaidDropdown:SetCallback("OnValueChanged", function(widget, event, key)
         self.selectedRaidToDelete = key
     end)
@@ -525,7 +468,7 @@ function GBitsRaidManager:CreateRaidsTab(container)
 
     local updateCashRaidDropdown = AceGUI:Create("Dropdown")
     updateCashRaidDropdown:SetLabel("Выберите рейд для обновления суммы:")
-    updateCashRaidDropdown:SetList(self:GetRaidNames())
+    updateCashRaidDropdown:SetList(addonTable:GetRaidNames(self.db.profile.Raids or {}))
     updateCashRaidDropdown:SetCallback("OnValueChanged", function(widget, event, key)
         self.selectedCashRaid = key
     end)
@@ -574,7 +517,7 @@ function GBitsRaidManager:CreateRaidManagerTab(container)
     local raidDropdown = AceGUI:Create("Dropdown")
     raidDropdown:SetLabel("Выберите рейд для отображения:")
     raidDropdown:SetFullWidth(true)
-    raidDropdown:SetList(self:GetRaidNames())
+    raidDropdown:SetList(addonTable:GetRaidNames(self.db.profile.Raids or {}))
     raidDropdown:SetCallback("OnValueChanged", function(widget, event, key)
         self:DisplayRaidInfo(self.db.profile.Raids[key])
     end)

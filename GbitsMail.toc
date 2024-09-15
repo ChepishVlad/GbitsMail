@@ -13,6 +13,7 @@ Libs\AceGUI-3.0\AceGUI-3.0.xml
 Libs\AceTimer-3.0\AceTimer-3.0.xml
 Libs\AceDB-3.0\AceDB-3.0.xml
 
+utils.lua
 core.lua
 get_members.lua
 raid_manager.lua
