@@ -159,7 +159,8 @@ end
 function GBitsRaidManager:UpdateCash()
     local selectedRaid = self.updateCashRaidDropdown:GetValue()
     local inputCash = tonumber(self.raidCashBox:GetText())
-    print(inputCash)
+    local divider = tonumber(self.dividerCashBox:GetText())
+    --print(inputCash)
 
     if selectedRaid and inputCash then
         local raid = self.db.profile.Raids[self.selectedCashRaid]
@@ -167,7 +168,7 @@ function GBitsRaidManager:UpdateCash()
         raid.total_cash = inputCash
 
         -- Рассчитываем сумму на участника и обновляем данные участников
-        local cashPerMember = math.floor(inputCash / 28)
+        local cashPerMember = math.floor(inputCash / divider)
         for _, raider in pairs(raid.raiders) do
             raider.base_cash = cashPerMember
             raider.cash = math.floor(cashPerMember * ((100 - raider.penalty + raider.bonus) / 100))
@@ -570,7 +571,6 @@ function GBitsRaidManager:CreateRaidsTab(container)
 
     local updateCashRaidDropdown = AceGUI:Create("Dropdown")
     updateCashRaidDropdown:SetLabel("Выберите рейд для обновления суммы:")
-    --updateCashRaidDropdown:SetFullWidth(true)
     updateCashRaidDropdown:SetList(self:GetRaidNames())
     updateCashRaidDropdown:SetCallback("OnValueChanged", function(widget, event, key)
         self.selectedCashRaid = key
@@ -580,13 +580,20 @@ function GBitsRaidManager:CreateRaidsTab(container)
 
     local raidCashBox = AceGUI:Create("EditBox")
     raidCashBox:SetLabel("Total Cash:")
-    --raidCashBox:SetFullWidth(true)
+    raidCashBox:SetWidth(100)
     updateCashRaidGroup:AddChild(raidCashBox)
     self.raidCashBox = raidCashBox
 
+    local dividerCashBox = AceGUI:Create("EditBox")
+    dividerCashBox:SetLabel("Делитель:")
+    dividerCashBox:SetWidth(100)
+    updateCashRaidGroup:AddChild(dividerCashBox)
+    self.dividerCashBox = dividerCashBox
+
+
     local updateCashRaidButton = AceGUI:Create("Button")
-    updateCashRaidButton:SetText("Обновить Cash")
-    updateCashRaidButton:SetWidth(200)
+    updateCashRaidButton:SetText("Обновить")
+    updateCashRaidButton:SetWidth(100)
     updateCashRaidButton:SetCallback("OnClick", function()
         self:UpdateCash()
     end)
