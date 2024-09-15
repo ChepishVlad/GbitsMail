@@ -6,6 +6,8 @@ local AceDB = LibStub("AceDB-3.0")
 
 local mailLogs = {}
 local raids = {}
+local sortColumn = "index"
+local sortAscending = true
 
 function RaidMail:OnInitialize()
     self.db = AceDB:New("RaidMailDB", {
@@ -24,6 +26,75 @@ function RaidMail:OnInitialize()
     -- Register event handlers for mail send success and failure
     self:RegisterEvent("MAIL_SEND_SUCCESS", "OnMailSendSuccess")
     self:RegisterEvent("MAIL_FAILED", "OnMailFailed")
+end
+
+-- Переделать позже по людски
+local CLASS_COLORS = {
+    ["WARRIOR"] = { r = 0.78, g = 0.61, b = 0.43 },
+    ["PALADIN"] = { r = 0.96, g = 0.55, b = 0.73 },
+    ["HUNTER"] = { r = 0.67, g = 0.83, b = 0.45 },
+    ["ROGUE"] = { r = 1.00, g = 0.96, b = 0.41 },
+    ["PRIEST"] = { r = 1.00, g = 1.00, b = 1.00 },
+    ["DEATHKNIGHT"] = { r = 0.77, g = 0.12, b = 0.23 },
+    ["SHAMAN"] = { r = 0.00, g = 0.44, b = 0.87 },
+    ["MAGE"] = { r = 0.41, g = 0.80, b = 0.94 },
+    ["WARLOCK"] = { r = 0.58, g = 0.51, b = 0.79 },
+    ["DRUID"] = { r = 1.00, g = 0.49, b = 0.04 },
+    ["Воин"] = { r = 0.78, g = 0.61, b = 0.43 },
+    ["Паладин"] = { r = 0.96, g = 0.55, b = 0.73 },
+    ["Охотник"] = { r = 0.67, g = 0.83, b = 0.45 },
+    ["Охотница"] = { r = 0.67, g = 0.83, b = 0.45 },
+    ["Разбойник"] = { r = 1.00, g = 0.96, b = 0.41 },
+    ["Разбойница"] = { r = 1.00, g = 0.96, b = 0.41 },
+    ["Жрец"] = { r = 1.00, g = 1.00, b = 1.00 },
+    ["Жрица"] = { r = 1.00, g = 1.00, b = 1.00 },
+    ["Рыцарь смерти"] = { r = 0.77, g = 0.12, b = 0.23 },
+    ["Шаман"] = { r = 0.00, g = 0.44, b = 0.87 },
+    ["Шаманка"] = { r = 0.00, g = 0.44, b = 0.87 },
+    ["Маг"] = { r = 0.41, g = 0.80, b = 0.94 },
+    ["Чернокнижник"] = { r = 0.58, g = 0.51, b = 0.79 },
+    ["Чернокнижница"] = { r = 0.58, g = 0.51, b = 0.79 },
+    ["Друид"] = { r = 1.00, g = 0.49, b = 0.04 },
+}
+
+local function GetColoredText(class, text)
+    local color = CLASS_COLORS[class]
+    if color then
+        return string.format("|cff%02x%02x%02x%s|r", color.r * 255, color.g * 255, color.b * 255, text)
+    else
+        return text  -- Если класс не найден, возвращаем обычный текст
+    end
+end
+
+-- Button in mail frame on Sending mail Tab
+function RaidMail:CreateGbitPostButton()
+    self.gbitPostButton = CreateFrame("Button", "GbitPostButton", SendMailFrame, "UIPanelButtonTemplate")
+    self.gbitPostButton:SetText("GbitsMail")
+    self.gbitPostButton:SetSize(100, 25)
+    self.gbitPostButton:SetPoint("TOPLEFT", SendMailFrame, "TOPRIGHT", -155, -12)
+    self.gbitPostButton:SetScript("OnClick", function()
+        self:ShowFrame()
+    end)
+    self.gbitPostButton:Hide()
+    local function OnMailFrameOpened()
+        if SendMailFrame:IsVisible() then
+            self.gbitPostButton:Show()
+        else
+            self.gbitPostButton:Hide()
+        end
+    end
+    SendMailFrame:HookScript("OnShow", OnMailFrameOpened)
+    SendMailFrame:HookScript("OnHide", OnMailFrameOpened)
+end
+
+local function SortRaiders(raiders, column, ascending)
+    table.sort(raiders, function(a, b)
+        if ascending then
+            return a[column] < b[column]
+        else
+            return a[column] > b[column]
+        end
+    end)
 end
 
 -- Event handler for successful mail send
@@ -51,42 +122,6 @@ function RaidMail:OnMailFailed()
     end
 end
 
-local function GetRaidersList()
-    local raiders = {}
-    if IsInRaid() then
-        local numRaidMembers = GetNumGroupMembers()
-        if numRaidMembers > 0 then
-            for i = 1, numRaidMembers do
-                local name, _, subgroup, _, class, _, _, _, _, _, classFileName = GetRaidRosterInfo(i)
-                --print(name)
-                table.insert(raiders, {["name"] = name, ["group"] = subgroup, ["class"] = class, ["cashPercent"] = 100})
-            end
-        end
-    else
-        print("Вы не в рейде.")
-    end
-    return raiders
-end
-
--- Новая функция для сохранения рейда
-function RaidMail:SaveRaid()
-    local raidName = self.raidNameEditBox:GetText()
-    local raiders = GetRaidersList()
-
-    if #raiders > 0 then
-        table.insert(raids, {["raid_name"] = raidName, ["raiders"] = raiders})
-        -- Сообщение об успешном сохранении
-        print("Рейд успешно сохранен.")
-
-        -- Выводим имена рейдеров (опционально)
-        for _, raider in ipairs(raiders) do
-            print(string.format("Рейдер: %s, Группа: %d, Класс: %s", raider.name, raider.group, raider.class))
-        end
-    else
-        print("Не удалось сохранить рейд. Вы не в рейде.")
-    end
-end
-
 -- Main frame
 function RaidMail:CreateMainFrame()
     local frame = AceGUI:Create("Frame")
@@ -103,7 +138,7 @@ function RaidMail:CreateMainFrame()
     tabGroup:SetTabs(
             {
                 {text="Рассылка", value="mail"},
-                {text="Рейд", value="raid"}
+                {text="Рейдовая рассылка", value="raid"}
             }
     )
     tabGroup:SetCallback("OnGroupSelected", function(container, event, group)
@@ -111,29 +146,6 @@ function RaidMail:CreateMainFrame()
     end)
     tabGroup:SelectTab("mail")
     frame:AddChild(tabGroup)
-end
-
--- "GbitsMail button"
-function RaidMail:CreateGbitPostButton()
-    self.gbitPostButton = CreateFrame("Button", "GbitPostButton", SendMailFrame, "UIPanelButtonTemplate")
-    self.gbitPostButton:SetText("GbitsMail")
-    self.gbitPostButton:SetSize(100, 25)
-    self.gbitPostButton:SetPoint("TOPLEFT", SendMailFrame, "TOPRIGHT", -155, -12)
-    self.gbitPostButton:SetScript("OnClick", function()
-        self:ShowFrame()
-    end)
-    self.gbitPostButton:Hide()
-
-    local function OnMailFrameOpened()
-        if SendMailFrame:IsVisible() then
-            self.gbitPostButton:Show()
-        else
-            self.gbitPostButton:Hide()
-        end
-    end
-
-    SendMailFrame:HookScript("OnShow", OnMailFrameOpened)
-    SendMailFrame:HookScript("OnHide", OnMailFrameOpened)
 end
 
 -- Tabs content
@@ -152,12 +164,6 @@ function RaidMail:CreateRaidTab(container)
     inlineGroup:SetFullWidth(true)
     container:AddChild(inlineGroup)
 
-    local raidNameEditBox = AceGUI:Create("EditBox")
-    raidNameEditBox:SetLabel("Название рейда:")
-    raidNameEditBox:SetFullWidth(true)
-    inlineGroup:AddChild(raidNameEditBox)
-    self.raidNameEditBox = raidNameEditBox
-
     -- Выпадающий список с сохраненными рейдами
     local raidDropdown = AceGUI:Create("Dropdown")
     raidDropdown:SetLabel("Выберите рейд:")
@@ -168,14 +174,6 @@ function RaidMail:CreateRaidTab(container)
     end)
     inlineGroup:AddChild(raidDropdown)
     self.raidDropdown = raidDropdown
-
-    local saveRaidButton = AceGUI:Create("Button")
-    saveRaidButton:SetText("Сохранить рейд")
-    saveRaidButton:SetWidth(200)
-    saveRaidButton:SetCallback("OnClick", function()
-        self:SaveRaid()
-    end)
-    inlineGroup:AddChild(saveRaidButton)
 
     -- Группа для отображения информации о рейде (таблица)
     local raidInfoGroup = AceGUI:Create("InlineGroup")
@@ -195,7 +193,7 @@ function RaidMail:GetRaidNames()
     return raidNames
 end
 
--- Обработка выбора рейда из выпадающего списка
+---- Обработка выбора рейда из выпадающего списка
 function RaidMail:OnRaidSelected(index)
     local selectedRaid = self.db.profile.Raids[index]
     if selectedRaid then
@@ -205,65 +203,155 @@ function RaidMail:OnRaidSelected(index)
     end
 end
 
--- Функция отображения информации о рейде в виде таблицы
+---- Функция отображения информации о рейде в виде таблицы
 function RaidMail:DisplayRaidInfo(raid)
     -- Очищаем предыдущую информацию
     self.raidInfoGroup:ReleaseChildren()
+
+    -- Создаем контейнер с прокруткой
+    local scrollContainer = AceGUI:Create("SimpleGroup")
+    scrollContainer:SetFullWidth(true)
+    scrollContainer:SetHeight(320)
+    scrollContainer:SetLayout("Fill")  -- "Fill" позволяет контейнеру занять всё доступное пространство
+    self.raidInfoGroup:AddChild(scrollContainer)
+
+    -- Создаем ScrollFrame для вертикальной прокрутки
+    local scrollFrame = AceGUI:Create("ScrollFrame")
+    scrollFrame:SetLayout("Flow")  -- Используем "Flow" для расположения элементов по вертикали
+    scrollContainer:AddChild(scrollFrame)
 
     -- Заголовки таблицы
     local headerGroup = AceGUI:Create("SimpleGroup")
     headerGroup:SetLayout("Flow")
     headerGroup:SetFullWidth(true)
-    self.raidInfoGroup:AddChild(headerGroup)
+    scrollFrame:AddChild(headerGroup)
 
-    local nameHeader = AceGUI:Create("Label")
-    nameHeader:SetText("Имя")
-    nameHeader:SetWidth(150)
-    headerGroup:AddChild(nameHeader)
+    -- Функция для добавления заголовков с сортировкой
+    local function AddHeader(labelText, column, width)
+        local header = AceGUI:Create("InteractiveLabel")
+        header:SetText(labelText)
+        header:SetWidth(width)
+        header:SetCallback("OnClick", function()
+            -- При нажатии меняем направление сортировки и сортируем данные
+            if sortColumn == column then
+                sortAscending = not sortAscending
+            else
+                sortColumn = column
+                sortAscending = true
+            end
+            SortRaiders(raid.raiders, column, sortAscending)
+            self:DisplayRaidInfo(raid) -- Перерисовываем таблицу с отсортированными данными
+        end)
+        headerGroup:AddChild(header)
+    end
 
-    local groupHeader = AceGUI:Create("Label")
-    groupHeader:SetText("Группа")
-    groupHeader:SetWidth(50)
-    headerGroup:AddChild(groupHeader)
+    AddHeader("№", "index", 30)
+    AddHeader("Name", "name", 150)
+    AddHeader("Cash", "cash", 50)
 
-    local classHeader = AceGUI:Create("Label")
-    classHeader:SetText("Класс")
-    classHeader:SetWidth(150)
-    headerGroup:AddChild(classHeader)
+    for i, raider in ipairs(raid.raiders) do
+        -- Дополняем данные для сортировки по "index"
+        raider.index = i
 
-    local percentHeader = AceGUI:Create("Label")
-    percentHeader:SetText("% Кэша")
-    percentHeader:SetWidth(50)
-    headerGroup:AddChild(percentHeader)
-
-    -- Заполняем таблицу данными рейда
-    for _, raider in ipairs(raid.raiders) do
         local rowGroup = AceGUI:Create("SimpleGroup")
         rowGroup:SetLayout("Flow")
         rowGroup:SetFullWidth(true)
-        self.raidInfoGroup:AddChild(rowGroup)
+        scrollFrame:AddChild(rowGroup)
+
+        -- Порядковый номер строки
+        local indexLabel = AceGUI:Create("Label")
+        indexLabel:SetText(tostring(i))  -- Используем индекс i как порядковый номер
+        indexLabel:SetWidth(30)
+        rowGroup:AddChild(indexLabel)
 
         local nameLabel = AceGUI:Create("Label")
-        nameLabel:SetText(raider.name)
+        nameLabel:SetText(GetColoredText(raider.class, raider.name))
         nameLabel:SetWidth(150)
         rowGroup:AddChild(nameLabel)
 
-        local groupLabel = AceGUI:Create("Label")
-        groupLabel:SetText(tostring(raider.group))
-        groupLabel:SetWidth(50)
-        rowGroup:AddChild(groupLabel)
+        local cashLabel = AceGUI:Create("Label")
+        cashLabel:SetText(tostring(raider.cash or 0))
+        cashLabel:SetWidth(50)
+        rowGroup:AddChild(cashLabel)
 
-        local classLabel = AceGUI:Create("Label")
-        classLabel:SetText(raider.class)
-        classLabel:SetWidth(150)
-        rowGroup:AddChild(classLabel)
+        -- Кнопка Edit
+        local editButton = AceGUI:Create("Button")
+        editButton:SetText("Edit")
+        editButton:SetWidth(100)
+        rowGroup:AddChild(editButton)
 
-        local percentLabel = AceGUI:Create("Label")
-        percentLabel:SetText(tostring(raider.cashPercent))
-        percentLabel:SetWidth(50)
-        rowGroup:AddChild(percentLabel)
+        -- Обработчик нажатия кнопки "Edit"
+        editButton:SetCallback("OnClick", function()
+            self:OpenEditFrame(raider, raid)
+        end)
     end
 end
+
+-- Функция для открытия фрейма редактирования персонажа
+function RaidMail:OpenEditFrame(raider, raid)
+    -- Создаем фрейм редактирования
+    local editFrame = AceGUI:Create("Frame")
+    editFrame:SetTitle("Edit Raider: " .. raider.name)
+    editFrame:SetLayout("Flow")
+    editFrame:SetWidth(300)
+    editFrame:SetHeight(250)
+
+    -- Поле Name (не редактируемое)
+    local nameLabel = AceGUI:Create("Label")
+    nameLabel:SetText("Name: " .. raider.name)
+    nameLabel:SetWidth(200)
+    editFrame:AddChild(nameLabel)
+
+    -- Поле Group (не редактируемое)
+    local groupLabel = AceGUI:Create("Label")
+    groupLabel:SetText("Group: " .. tostring(raider.group))
+    groupLabel:SetWidth(200)
+    editFrame:AddChild(groupLabel)
+
+    -- Поле Class (не редактируемое)
+    local classLabel = AceGUI:Create("Label")
+    classLabel:SetText("Class: " .. raider.class)
+    classLabel:SetWidth(200)
+    editFrame:AddChild(classLabel)
+
+    -- Поле Cash (редактируемое)
+    local cashEdit = AceGUI:Create("EditBox")
+    cashEdit:SetLabel("Cash")
+    cashEdit:SetText(tostring(raider.cash))
+    cashEdit:SetWidth(200)
+    editFrame:AddChild(cashEdit)
+
+    -- Кнопка сохранения
+    local saveButton = AceGUI:Create("Button")
+    saveButton:SetText("Save")
+    saveButton:SetWidth(200)
+    editFrame:AddChild(saveButton)
+
+    -- Обработчик сохранения
+    saveButton:SetCallback("OnClick", function()
+        raider.cash = tonumber(cashEdit:GetText())
+        -- Закрыть фрейм редактирования после сохранения
+        editFrame:Hide()
+
+        -- Обновляем данные рейда в базе данных
+        self:UpdateRaidInDatabase(raid)
+
+        -- Обновить интерфейс после редактирования
+        RaidMail:DisplayRaidInfo(raid)
+    end)
+end
+
+-- Функция для обновления рейда в базе данных
+function RaidMail:UpdateRaidInDatabase(updatedRaid)
+    for i, raid in ipairs(self.db.profile.Raids) do
+        if raid.raid_name == updatedRaid.raid_name then
+            -- Заменяем старый рейд новым
+            self.db.profile.Raids[i] = updatedRaid
+            return
+        end
+    end
+end
+
 
 -- Sanding mail tab content
 function RaidMail:CreateMailTab(container)
