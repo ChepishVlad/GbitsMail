@@ -24,13 +24,13 @@ function GetMembers:AddRaidMembersButtonToSocialFrame()
 end
 
 function GetMembers:ShowRaidMembersPopup()
-    if not IsInRaid() then
+    if not addonTable:IsInRaid() then
         print("Вы не в рейде.")
         return
     end
 
     local raidMembers = {}
-    for i = 1, GetNumGroupMembers() do
+    for i = 1, addonTable:GetNumGroupMembers() do
         local name = GetRaidRosterInfo(i)
         if name then
             table.insert(raidMembers, name)
@@ -50,7 +50,7 @@ function GetMembers:ShowRaidMembersPopup()
         membersEditBox:SetFullWidth(true)
         membersEditBox:SetFullHeight(true)
         membersEditBox:SetText(membersString)
-        membersEditBox:DisableButton(true)
+        membersEditBox.button:Hide()
 
         popupFrame:AddChild(membersEditBox)
         popupFrame:SetCallback("OnClose", function(widget)

@@ -189,8 +189,9 @@ function RaidMail:CreateMailTab(container)
 end
 
 function RaidMail:StopSending()
+    local subject = self.subj or ''
     self.currentIndex  = #self.names
-    local message = "Рассылка " .. self.subj .. " была остановлена"
+    local message = "Рассылка " .. subject .. " была остановлена"
     print(message)
     table.insert(mailLogs, message)
 end
@@ -244,7 +245,7 @@ function RaidMail:ShowMailLogsPopup()
     logsEditBox:SetFullWidth(true)
     logsEditBox:SetFullHeight(true)
     logsEditBox:SetText(self:GenerateRichTextLogs())
-    logsEditBox:DisableButton(true)  -- Скрыть кнопку "ОК"
+    logsEditBox.button:Hide()  -- Скрыть кнопку "ОК"
 
     -- Добавляем EditBox в окно поп-апа
     popupFrame:AddChild(logsEditBox)
